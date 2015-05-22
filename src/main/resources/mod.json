@@ -1,0 +1,8 @@
+{
+	"main" : "fr.wseduc.sso.FakeSSO",
+	"port" : 8041,
+	"mode": "dev",
+	"path-prefix" : "/sso",
+	"app-registry.port" : 8012,
+	"entcore.port" : 8090
+}

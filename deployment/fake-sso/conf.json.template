@@ -1,0 +1,26 @@
+    {
+      "name": "fr.wseduc~fake-sso~0.1-SNAPSHOT",
+      "config": {
+        "main" : "fr.wseduc.sso.FakeSSO",
+        "path-prefix" : "sso",
+        "port" : 8041,
+        "sql" : true,
+        "mongodb" : false,
+        "host": "${host}",
+        "ssl" : $ssl,
+        "auto-redeploy": false,
+        "userbook-host": "${host}",
+        "mode" : "${mode}",
+        "sso-controllers" : [
+          {
+            "class" : "fr.wseduc.sso.controllers.Charlemagne",
+            "config" : {
+              "url" : "http://www.ecoledirecte.com",
+              "teacherUrl" : "http://www.portail.ecoledirecte.com",
+              "siteId" : "atos",
+              "privateKey" : "SolutionENTLibre"
+            }
+          }
+        ]
+      }
+    }
