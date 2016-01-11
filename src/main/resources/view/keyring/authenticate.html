@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>{{name}}</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<script src="{{#infra}}js/loader.js{{/infra}}" type="text/javascript" id="context"></script>
+	<script type="text/ng-template" id="empty"></script>
+	<script language="JavaScript">
+			function autoSubmit(form) {
+				setTimeout(function() {
+					form.submit();
+				}, 5000);
+			}
+	</script>
+</head>
+
+<body onload="autoSubmit(document.forms[0])">
+<portal ng-if="!notFound">
+	<div class="row">
+		<div class="twelve cell">
+			<div class="seven cell">
+				<h1>
+					<i18n>keyring.title</i18n> {{name}}
+				</h1>
+			</div>
+		</div>
+		<div class="clear"></div>
+	</div>
+	<hr>
+	<section>
+		<article class="row">
+			<form method="POST" action="{{url}}">
+				{{#form}}
+					<input type="hidden" name="{{name}}" value="{{value}}">
+				{{/form}}
+			</form>
+			<div class="rigid-grid row">
+				<div class="margin-two height-three">
+					<div class="twelve cell horizontal-spacing">
+						<div class="row centered">
+							<i18n>keyring.edit.credentials.text</i18n>
+							<a href="/sso/keyring/edit/{{service_id}}"><i18n>keyring.edit.credentials</i18n></a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</article>
+	</section>
+</portal>
+</body>
+
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<title>{{#i18n}}keyring.title{{/i18n}}</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<script src="{{#infra}}js/loader.js{{/infra}}" type="text/javascript" id="context"></script>
+		<script src="/sso/public/js/keyring/admin-model.js" type="text/javascript"></script>
+		<script src="/sso/public/js/keyring/admin-controller.js" type="text/javascript"></script>
+		<script type="text/ng-template" id="empty"></script>
+	</head>
+
+	<body ng-controller="KeyringAdminController">
+		<top-notification trigger="topNotification.show" confirm="topNotification.confirm" content="topNotification.message"></top-notification>
+		<admin-portal>
+			<div class="twelve">
+				<nav class="three cell recursive-list">
+					<input type="text" placeholder="{{#i18n}}keyring.search{{/i18n}}" ng-model="filterServices" />
+					<ul>
+						<li ng-click="newKeyRing()" ng-class="{ selected: !keyring.id }" class="top-item last">
+							<strong><i18n>keyring.createKeyring</i18n></strong>
+						</li>
+						<li ng-repeat="service in keyrings.all | filter: {name: filterServices} | orderBy: 'name'" ng-click="viewKeyring(service)" ng-class="{ selected: keyring === service }">
+							[[service.name]]
+						</li>
+					</ul>
+				</nav>
+				<article class="side-tabs-content nine cell" ng-if="keyring">
+					<div class="row">
+						<h1 class="nine cell" ng-if="!keyring.id"><i18n>keyring.creation</i18n></h1>
+						<h1 class="nine cell" ng-if="keyring.id"><i18n>keyring.current</i18n>[[keyring.name]]</h1>
+					</div>
+
+					<form ng-submit="saveKeyring(keyring)">
+						<div class="row" ng-if="keyring.id">
+							<label class="four cell"><span tooltip="keyring.tooltip.id"><i18n>keyring.id</i18n></span></label>
+							<input type="text" ng-model="keyring.id" class="four cell" disabled />
+						</div>
+						<div class="row" ng-if="keyring.service_id">
+							<label class="four cell"><span tooltip="keyring.tooltip.serviceId"><i18n>keyring.serviceId</i18n></span></label>
+							<input type="text" ng-model="keyring.service_id" class="four cell" disabled />
+						</div>
+						<div class="row">
+							<label class="four cell"><span tooltip="keyring.tooltip.name"><i18n>keyring.name</i18n></span></label>
+							<input type="text" ng-model="keyring.name" class="four cell" required />
+						</div>
+						<div class="row">
+							<label class="four cell"><span tooltip="keyring.tooltip.url"><i18n>keyring.url</i18n></span></label>
+							<input type="text" ng-model="keyring.url" class="four cell" required />
+						</div>
+						<div class="row">
+							<label class="four cell"><span tooltip="keyring.tooltip.description"><i18n>keyring.description</i18n></span></label>
+							<input type="text" ng-model="keyring.description" class="four cell" />
+						</div>
+						<div ng-repeat="field in keyring.schema">
+							<div class="row">
+								<label class="four cell"><span tooltip="keyring.tooltip.field.name"><i18n>keyring.field.name</i18n></span></label>
+								<input type="text" ng-model="field.name" class="four cell" required />
+								<button type="button" class="one cell" ng-click="removeLine(keyring, $index)">-</button>
+							</div>
+							<div class="row">
+								<label class="four cell"><span tooltip="keyring.tooltip.field.display"><i18n>keyring.field.display</i18n></span></label>
+								<input type="text" ng-model="field.display" class="four cell" required />
+							</div>
+							<div class="row">
+								<label class="four cell"><span tooltip="keyring.tooltip.field.type"><i18n>keyring.field.type</i18n></span></label>
+								<select class="four cell" ng-model="field.type" required >
+									<option value="text">{{#i18n}}keyring.type.text{{/i18n}}</option>
+									<option value="password">{{#i18n}}keyring.type.password{{/i18n}}</option>
+								</select>
+							</div>
+						</div>
+						<div class="row">
+							<button class="right-magnet" ng-if="!keyring.id"><i18n>keyring.create</i18n></button>
+							<button class="right-magnet" ng-if="keyring.id"><i18n>keyring.save</i18n></button>
+							<button type="button" class="right-magnet" ng-click="deleteKeyring(keyring)" ng-if="keyring.id" style="margin-right: 10px"><i18n>keyring.delete</i18n></button>
+							<button type="button" class="right-magnet" ng-click="addLine(keyring)" style="margin-right: 10px"><i18n>keyring.add.line</i18n></button>
+						</div>
+					</form>
+				</article>
+			</div>
+		</admin-portal>
+	</body>
+
+</html>
