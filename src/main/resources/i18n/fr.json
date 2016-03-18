@@ -37,5 +37,7 @@
   "keyring.confirm.deletion" : "Êtes-vous sûr de vouloir supprimer ce trousseau ?",
   "confirm" : "Confirmer",
   "delete" : "Supprimer",
+  "keyring.service.access" : "Accéder au service",
+  "keyring.wait.redirect" : "Vous allez être redirigé dans quelques secondes.",
   "keyring.confirm.edit.schema" : "Vous êtes sur le point de modifier le schema du trousseau. Cette action supprimera toutes les données du trousseau. Êtes-vous sûr de vouloir continuer ?"
 }

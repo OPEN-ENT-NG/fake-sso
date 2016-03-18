@@ -30,14 +30,18 @@
 	<hr>
 	<section>
 		<article class="row">
-			<form method="POST" action="{{url}}">
-				{{#form}}
-					<input type="hidden" name="{{name}}" value="{{value}}">
-				{{/form}}
-			</form>
 			<div class="rigid-grid row">
-				<div class="margin-two height-three">
-					<div class="twelve cell horizontal-spacing">
+				<div>
+					<div class="twelve cell horizontal-spacing" style="text-align: center;">
+						<div class="row centered">
+							<i18n>keyring.wait.redirect</i18n>
+							<form method="POST" action="{{url}}">
+								{{#form}}
+								<input type="hidden" name="{{name}}" value="{{value}}">
+								{{/form}}
+								<button class="button centered" style="float: none;"><i18n>keyring.service.access</i18n></button>
+							</form>
+						</div>
 						<div class="row centered">
 							<i18n>keyring.edit.credentials.text</i18n>
 							<a href="/sso/keyring/edit/{{service_id}}"><i18n>keyring.edit.credentials</i18n></a>
