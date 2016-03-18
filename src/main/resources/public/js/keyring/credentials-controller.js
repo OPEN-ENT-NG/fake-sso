@@ -13,8 +13,8 @@ function CredentialController($scope, $rootScope, model, template, route, date, 
 			if (data && data.id) {
 				credential['id'] = data.id;
 				$scope.credential = credential;
-				$scope.access();
 			}
+			$scope.access();
 		});
 	};
 
