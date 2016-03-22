@@ -7,15 +7,15 @@
 	<script src="{{#infra}}js/loader.js{{/infra}}" type="text/javascript" id="context"></script>
 	<script type="text/ng-template" id="empty"></script>
 	<script language="JavaScript">
-			function autoSubmit(form) {
+			function autoSubmit() {
 				setTimeout(function() {
-					form.submit();
+					$('form').find('button').click();
 				}, 5000);
 			}
 	</script>
 </head>
 
-<body onload="autoSubmit(document.forms[0])">
+<body onload="autoSubmit()">
 <portal ng-if="!notFound">
 	<div class="row">
 		<div class="twelve cell">
