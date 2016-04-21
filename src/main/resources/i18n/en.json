@@ -24,7 +24,9 @@
   "keyring.save" : "Sauvegarder",
   "keyring.delete" : "Supprimer",
   "keyring.edit.credentials" : "Modifier",
-  "keyring.edit.credentials.text" : "Pour mettre à jour vos identifiants, cliquez sur le lien : ",
+  "keyring.title.credentials.text" : "Mettre à jour vos identifiants",
+  "keyring.info.credentials.text" : "Renseignez ici vos identifiants d'accès à l'application",
+  "keyring.edit.credentials.text" : "Pour mettre à jour vos identifiants, cliquez sur : ",
   "keyring.tooltip.field.name" : "Nom du champ",
   "keyring.tooltip.field.display" : "Nom d'affichage du champ",
   "keyring.tooltip.field.type" : "Type du champ",
@@ -35,7 +37,9 @@
   "keyring.type.password" : "Mot de passe",
   "keyring.type.text" : "Texte",
   "keyring.confirm.deletion" : "Êtes-vous sûr de vouloir supprimer ce trousseau ?",
+  "keyring.wait.redirect" : "Vous allez être redirigé vers l'application dans quelques secondes.",
   "confirm" : "Confirmer",
   "delete" : "Supprimer",
+  "keyring.service.access" : "Accéder directement au service",
   "keyring.confirm.edit.schema" : "Vous êtes sur le point de modifier le schema du trousseau. Cette action supprimera toutes les données du trousseau. Êtes-vous sûr de vouloir continuer ?"
 }

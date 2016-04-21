@@ -34,17 +34,21 @@
 				<div>
 					<div class="twelve cell horizontal-spacing" style="text-align: center;">
 						<div class="row centered">
-							<i18n>keyring.wait.redirect</i18n>
-							<form method="POST" action="{{url}}">
+
+							<h2 class="reduce-block-eight"><i18n>keyring.wait.redirect</i18n></h2>
+							<form class="reduce-block-eight" method="POST" action="{{url}}">
 								{{#form}}
 								<input type="hidden" name="{{name}}" value="{{value}}">
 								{{/form}}
-								<button class="button centered" style="float: none;"><i18n>keyring.service.access</i18n></button>
+								<a class="centered reduce-block-eight"><i18n>keyring.service.access</i18n></a>
 							</form>
 						</div>
-						<div class="row centered">
-							<i18n>keyring.edit.credentials.text</i18n>
-							<a href="/sso/keyring/edit/{{service_id}}"><i18n>keyring.edit.credentials</i18n></a>
+
+						<div class="row reduce-block-eight">
+							<a href="/sso/keyring/edit/{{service_id}}" class="button right-magnet"><i18n>keyring.edit.credentials</i18n></a>
+							<div class="reduce-block-eight right-magnet">
+								<i18n>keyring.edit.credentials.text</i18n>
+							</div>
 						</div>
 					</div>
 				</div>
