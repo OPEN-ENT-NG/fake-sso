@@ -9,7 +9,7 @@
 	<script language="JavaScript">
 			function autoSubmit() {
 				setTimeout(function() {
-					$('form').find('button').click();
+					$('form').submit();
 				}, 5000);
 			}
 	</script>
@@ -35,12 +35,12 @@
 					<div class="twelve cell horizontal-spacing" style="text-align: center;">
 						<div class="row centered">
 
-							<h2 class="reduce-block-eight"><i18n>keyring.wait.redirect</i18n></h2>
-							<form class="reduce-block-eight" method="POST" action="{{url}}">
+							<p class="reduce-block-eight strong-text"><i18n>keyring.wait.redirect</i18n></p>
+							<form class="reduce-block-eight" method="POST" action="{{url}}" id="sso">
 								{{#form}}
 								<input type="hidden" name="{{name}}" value="{{value}}">
 								{{/form}}
-								<a class="centered reduce-block-eight"><i18n>keyring.service.access</i18n></a>
+								<a class="centered reduce-block-eight" onclick="document.getElementById('sso').submit()" href="#"><i18n>keyring.service.access</i18n></a>
 							</form>
 						</div>
 
