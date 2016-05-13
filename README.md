@@ -6,5 +6,5 @@
 
 * Financeur(s) : Région Nord Pas de Calais-Picardie
 
-* description : Connecteurs faux SSO
+* Description : Connecteurs faux SSO
 
