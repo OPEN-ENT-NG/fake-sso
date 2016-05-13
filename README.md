@@ -1,6 +1,10 @@
 # À propos de l'application Fake SSO
 
-* licence : [AGPL v3](http://www.gnu.org/licenses/agpl.txt)
-* financeur : Région Picardie, Conseil général  91, Région Poitou Charente
+* Licence : [AGPL v3](http://www.gnu.org/licenses/agpl.txt) - Copyright Conseil Régional Nord Pas de Calais - Picardie
+
+* Développeur(s) : Open Digital Education
+
+* Financeur(s) : Région Nord Pas de Calais-Picardie
+
 * description : Connecteurs faux SSO
 
