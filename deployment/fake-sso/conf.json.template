@@ -15,8 +15,8 @@
           {
             "class" : "fr.wseduc.sso.controllers.Charlemagne",
             "config" : {
-              "url" : "http://www.ecoledirecte.com",
-              "teacherUrl" : "http://www.portail.ecoledirecte.com",
+              "url" : "https://www.ecoledirecte.com",
+              "teacherUrl" : "https://portail.ecoledirecte.com",
               "siteId" : "atos",
               "privateKey" : "SolutionENTLibre"
             }
