@@ -5,7 +5,7 @@
         "path-prefix" : "sso",
         "port" : 8041,
         "sql" : true,
-        "mongodb" : false,
+        "mongodb" : true,
         "host": "${host}",
         "ssl" : $ssl,
         "auto-redeploy": false,
@@ -19,6 +19,12 @@
               "teacherUrl" : "https://portail.ecoledirecte.com",
               "siteId" : "atos",
               "privateKey" : "SolutionENTLibre"
+            }
+          },
+          {
+            "class" : "fr.wseduc.sso.controllers.Pronote",
+            "config" : {
+
             }
           }
         ]
