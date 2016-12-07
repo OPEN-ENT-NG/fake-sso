@@ -22,6 +22,7 @@ import org.vertx.java.core.logging.impl.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Pronote extends SSOController {
 
@@ -121,7 +122,7 @@ public class Pronote extends SSOController {
 
 	private void callPronote(JsonObject jo, final Handler<JsonObject> handler) {
 		//two successive errors can be received (connection timeout + timeout period exceeded)
-		final Boolean[] responseErrorIsSent = new Boolean[]{false};
+		final AtomicBoolean responseIsSent = new AtomicBoolean(false);
 		URI pronoteUri = null;
 		try {
 			pronoteUri = new URI((jo.getString("address") + pronoteContext));
@@ -155,7 +156,9 @@ public class Pronote extends SSOController {
 						log.error(response.statusMessage());
 						handler.handle(new JsonObject().putString("status", "error").putString("message", "pronote.access.error"));
 					}
-					httpClient.close();
+					if (!responseIsSent.getAndSet(true)) {
+						httpClient.close();
+					}
 				}
 			});
 
@@ -166,10 +169,10 @@ public class Pronote extends SSOController {
 				@Override
 				public void handle(Throwable event) {
 					log.error(event.getMessage(), event);
-					if (!responseErrorIsSent[0]) {
+					if (!responseIsSent.getAndSet(true)) {
 						handler.handle(new JsonObject().putString("status", "error").putString("message", "pronote.connection.error"));
+						httpClient.close();
 					}
-					responseErrorIsSent[0] = true;
 				}
 			}).end();
 		}
