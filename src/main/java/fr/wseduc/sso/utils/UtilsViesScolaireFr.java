@@ -34,7 +34,7 @@ public class UtilsViesScolaireFr {
 
     private static String PROFIL_PERSONNE = "personne";
 
-    public static String CRYPTAGE_ALGORTIHME = "RSA";
+    public static String CRYPTAGE_ALGORITHME = "RSA";
 
 
     public static final String PROFIL_ELEVE_ENT = "Student";

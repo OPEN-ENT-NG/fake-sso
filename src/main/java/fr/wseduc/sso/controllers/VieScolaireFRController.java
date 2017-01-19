@@ -45,8 +45,8 @@ public class VieScolaireFRController extends SSOController {
     private String urlEndLVS ;
     private int responseTimeout;
     private static final String patternDateLVS = "dd/MM/yyyy";
-    SimpleDateFormat simpleDateFormat;
-    DateFormat patternDateNG = new SimpleDateFormat("yyyy-MM-dd");
+    private SimpleDateFormat simpleDateFormat;
+    private DateFormat patternDateNG = new SimpleDateFormat("yyyy-MM-dd");
     private static final String parameterRequestEtabURL = "url";
 
     @Get("/viescolairefr")
@@ -61,97 +61,97 @@ public class VieScolaireFRController extends SSOController {
         UserUtils.getUserInfos(eb, request, new Handler<UserInfos>() {
             @Override
             public void handle(final UserInfos user) {
-                if (user != null) {
-                    final String urlVieScolaireFREtablissement = request.params().get(parameterRequestEtabURL);
-                    if(null != urlVieScolaireFREtablissement
-                            && Utils.isNotEmpty(urlVieScolaireFREtablissement)){
+            if (user != null) {
+                final String urlVieScolaireFREtablissement = request.params().get(parameterRequestEtabURL);
+                if(Utils.isNotEmpty(urlVieScolaireFREtablissement)){
 
-                        StringBuilder urlToGetTicketStrBuilder = new StringBuilder(urlVieScolaireFREtablissement);
-
-                        URI viescolairefrURI = null;
-                        try {
-                            viescolairefrURI = new URI(urlToGetTicketStrBuilder.toString());
-                        } catch (URISyntaxException e) {
-                            log.error("Invalid viescolairefr web service uri", e);
-                            renderError(request);
-                        }
-
-                        if (viescolairefrURI != null) {
-                            urlToGetTicketStrBuilder.append(urlEndLVS);
-                            final HttpClient httpClient = generateHttpClient(viescolairefrURI);
-                            log.debug("Get VSFR ticket : " + user.getUserId());
-                            final HttpClientRequest httpClientRequest = httpClient.get(urlToGetTicketStrBuilder.toString()  , new Handler<HttpClientResponse>() {
-                                @Override
-                                public void handle(HttpClientResponse response) {
-                                    if (response.statusCode() == 200) {
-                                        final Buffer ticketVSFRBuffer = new Buffer();
-                                        response.dataHandler(new Handler<Buffer>() {
-                                            @Override
-                                            public void handle(Buffer event) {
-                                                ticketVSFRBuffer.appendBuffer(event);
-                                                String ticketVSFR = ticketVSFRBuffer.toString();
-                                                if( null != ticketVSFR
-                                                        && !ticketVSFR.isEmpty()){
-                                                    log.debug("Building VSFR URL : " + user.getUserId());
-
-                                                    // Building unencrypted url
-                                                    String userParametre = constructURLVieScolaireFR(ticketVSFR, user);
-
-                                                    log.debug("VSFR URL builded :  userParametre -> " + userParametre);
-
-                                                    // Building crypted URL
-                                                    try {
-                                                        final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-                                                        cipher.init(Cipher.ENCRYPT_MODE, viescolairefrPublicKey);
-                                                        final String urlCrypte = URLEncoder.encode(Base64.encodeBytes(
-                                                                cipher.doFinal(userParametre.getBytes("UTF-8"))), "UTF-8");
-
-                                                        String urIAppel = UtilsViesScolaireFr.URL_KEY_CRYPT + urlCrypte;
-
-                                                        log.debug("Crypted VSFR URL build : " + urIAppel);
-                                                        // REDIRECTION vers VSFR
-                                                        redirect(request, urlVieScolaireFREtablissement, urIAppel);
-                                                    } catch (Exception e) {
-                                                        log.error("Error encrypting rsa viescolairefr url");
-                                                        renderError(request);
-                                                    }
-                                                } else{
-                                                    log.error("Empty VSFR ticket : " + user.getUserId());
-                                                    renderError(request);
-                                                }
-                                            }
-                                        });
-                                    } else {
-                                        log.error("Error when calling VSFR URL to get ticket : " + response.statusMessage());
-                                        renderError(request);
-                                    }
-                                    if (!responseIsSent.getAndSet(true)) {
-                                        httpClient.close();
-                                    }
-                                }
-                            });
-                            httpClientRequest.headers().set("Content-Length", "0");
-                            httpClientRequest.setTimeout(responseTimeout);
-                            //Typically an unresolved Address, a timeout about connection or response
-                            httpClientRequest.exceptionHandler(new Handler<Throwable>() {
-                                @Override
-                                public void handle(Throwable event) {
-                                    log.error("Error when calling VSFR URL to get ticket for user : " + user.getUserId(), event);
-                                    if (!responseIsSent.getAndSet(true)) {
-                                        httpClient.close();
-                                    }
-                                    renderError(request);
-                                }
-                            }).end();
-                        }
-                    }else{
-                        log.error("Error : URL in parameters is  empty or undefined for user : " + user.getUserId());
+                    URI viescolairefrURI = null;
+                    try {
+                        viescolairefrURI = new URI(urlVieScolaireFREtablissement);
+                    } catch (URISyntaxException e) {
+                        log.error("Invalid viescolairefr web service uri", e);
                         renderError(request);
                     }
 
-                } else {
-                    unauthorized(request);
+                    if (viescolairefrURI != null) {
+                        String urlToGetTicketStrBuilder = urlVieScolaireFREtablissement + urlEndLVS;
+
+                        // Get the http client from the url that has been configured in "La Vie Scolaire" module
+                        final HttpClient httpClient = generateHttpClient(viescolairefrURI);
+                        log.debug("Get VSFR ticket : " + user.getUserId());
+
+                        // Get the Ticket form the server "La Vie Scolaire"
+                        final HttpClientRequest httpClientRequest = httpClient.get(urlToGetTicketStrBuilder.toString()  , new Handler<HttpClientResponse>() {
+                            @Override
+                            public void handle(HttpClientResponse response) {
+                                if (response.statusCode() == 200) {
+                                    final Buffer ticketVSFRBuffer = new Buffer();
+                                        response.dataHandler(new Handler<Buffer>() {
+                                            @Override
+                                            public void handle(Buffer event) {
+                                        ticketVSFRBuffer.appendBuffer(event);
+                                        String ticketVSFR = ticketVSFRBuffer.toString();
+                                        if(!ticketVSFR.isEmpty()){
+                                            log.debug("Building VSFR URL : " + user.getUserId());
+
+                                            // Building unencrypted url
+                                            String userParametre = constructURLVieScolaireFR(ticketVSFR, user);
+
+                                            log.debug("VSFR URL builded :  userParametre -> " + userParametre);
+
+                                            // Building crypted URL
+                                            try {
+                                                final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+                                                cipher.init(Cipher.ENCRYPT_MODE, viescolairefrPublicKey);
+                                                final String urlCrypte = URLEncoder.encode(Base64.encodeBytes(
+                                                        cipher.doFinal(userParametre.getBytes("UTF-8"))), "UTF-8");
+
+                                                String urIAppel = UtilsViesScolaireFr.URL_KEY_CRYPT + urlCrypte;
+
+                                                log.debug("Crypted VSFR URL build : " + urIAppel);
+                                                // REDIRECTION vers VSFR
+                                                redirect(request, urlVieScolaireFREtablissement, urIAppel);
+                                            } catch (Exception e) {
+                                                log.error("Error encrypting rsa viescolairefr url",e);
+                                                renderError(request);
+                                            }
+                                        } else{
+                                            log.error("Empty VSFR ticket : " + user.getUserId());
+                                            renderError(request);
+                                        }
+                                            }
+                                    });
+                                } else {
+                                    log.error("Error when calling VSFR URL to get ticket : " + response.statusMessage());
+                                    renderError(request);
+                                }
+                                if (!responseIsSent.getAndSet(true)) {
+                                    httpClient.close();
+                                }
+                            }
+                        });
+                        httpClientRequest.headers().set("Content-Length", "0");
+                        httpClientRequest.setTimeout(responseTimeout);
+                        //Typically an unresolved Address, a timeout about connection or response
+                            httpClientRequest.exceptionHandler(new Handler<Throwable>() {
+                                @Override
+                                public void handle(Throwable event) {
+                            log.error("Error when calling VSFR URL to get ticket for user : " + user.getUserId(), event);
+                            if (!responseIsSent.getAndSet(true)) {
+                                httpClient.close();
+                            }
+                            renderError(request);
+                                }
+                        }).end();
+                    }
+                }else{
+                    log.error("Error : URL in parameters is  empty or undefined for user : " + user.getUserId());
+                    renderError(request);
                 }
+
+            } else {
+                unauthorized(request);
+            }
             }
         });
     }
@@ -164,48 +164,52 @@ public class VieScolaireFRController extends SSOController {
      * @return parsed URL
      */
     private String constructURLVieScolaireFR(String ticketVSFR, UserInfos user) {
-
-        String personneJointureIdStr = user.getUserId();
-        String profilVSFR = UtilsViesScolaireFr.getProfilVieScolaireFr(user.getType());
-        StringBuffer userParametreBuffer = new StringBuffer(UtilsViesScolaireFr.ENT_PERSONNE_JOINTURE_KEY + personneJointureIdStr
-                + UtilsViesScolaireFr.APPLI_KEY + appli
-                + UtilsViesScolaireFr.PROFIL_KEY + profilVSFR);
-
+        StringBuilder userParametreBuffer = new StringBuilder();
+        String  profilVSFR = "";
         if (null != user){
-            if(null != user.getLastName()
-                    && Utils.isNotEmpty(user.getLastName())){
-                userParametreBuffer.append(UtilsViesScolaireFr.NOM_KEY + user.getLastName());
-            }else{
-                userParametreBuffer.append(UtilsViesScolaireFr.NOM_KEY);
+
+            profilVSFR = UtilsViesScolaireFr.getProfilVieScolaireFr(user.getType());
+
+            userParametreBuffer.append(UtilsViesScolaireFr.ENT_PERSONNE_JOINTURE_KEY).append(user.getUserId());
+            userParametreBuffer.append(UtilsViesScolaireFr.APPLI_KEY).append(appli);
+            userParametreBuffer.append(UtilsViesScolaireFr.PROFIL_KEY).append(profilVSFR);
+
+            userParametreBuffer.append(UtilsViesScolaireFr.NOM_KEY);
+            if(Utils.isNotEmpty(user.getLastName())){
+                userParametreBuffer.append(user.getLastName());
             }
-            if(null != user.getFirstName()
-                    && Utils.isNotEmpty(user.getFirstName())){
-                userParametreBuffer.append(UtilsViesScolaireFr.PRENOM_KEY + user.getFirstName());
-            }else {
-                userParametreBuffer.append(UtilsViesScolaireFr.PRENOM_KEY);
+
+            userParametreBuffer.append(UtilsViesScolaireFr.PRENOM_KEY);
+            if(Utils.isNotEmpty(user.getFirstName())){
+                userParametreBuffer.append(user.getFirstName());
             }
+
             if(null != user.getBirthDate()){
                 String newDateOfBirthday = "";
                 try {
                     Date dateOfBirthday = patternDateNG.parse(user.getBirthDate());
                     newDateOfBirthday = simpleDateFormat.format(dateOfBirthday);
                 } catch (ParseException e) {
-                    log.error("Error when parsing birthdate for user : " + user.getBirthDate(), e);
+                    log.error("Error when parsing birthdate for user.getUserId() : " + user.getUserId() +  " , date of birthday : " + user.getBirthDate(), e);
                 }
+
+                userParametreBuffer.append(UtilsViesScolaireFr.DTN_KEY);
                 if(Utils.isNotEmpty(newDateOfBirthday)){
-                    userParametreBuffer.append(UtilsViesScolaireFr.DTN_KEY + newDateOfBirthday);
-                } else {
-                    userParametreBuffer.append(UtilsViesScolaireFr.DTN_KEY);
+                    userParametreBuffer.append(newDateOfBirthday);
                 }
             } else {
                 userParametreBuffer.append(UtilsViesScolaireFr.DTN_KEY);
             }
         }else{
+            userParametreBuffer = new StringBuilder(UtilsViesScolaireFr.ENT_PERSONNE_JOINTURE_KEY);
+            userParametreBuffer.append(UtilsViesScolaireFr.APPLI_KEY).append(appli);
+            userParametreBuffer.append(UtilsViesScolaireFr.PROFIL_KEY).append(profilVSFR);
             userParametreBuffer.append(UtilsViesScolaireFr.NOM_KEY);
             userParametreBuffer.append(UtilsViesScolaireFr.PRENOM_KEY);
             userParametreBuffer.append(UtilsViesScolaireFr.DTN_KEY);
+            log.error("Unable to generate URL : user is null : ticketVSFR _ userParametreBuffer :" +ticketVSFR + "_" + userParametreBuffer);
         }
-        userParametreBuffer.append(UtilsViesScolaireFr.SERVICE_TICKET_KEY + ticketVSFR);
+        userParametreBuffer.append(UtilsViesScolaireFr.SERVICE_TICKET_KEY).append(ticketVSFR);
 
         return userParametreBuffer.toString();
     }
@@ -231,9 +235,10 @@ public class VieScolaireFRController extends SSOController {
      */
     @Override
     public void setSsoConfig(JsonObject ssoConfig) {
-        if (ssoConfig == null || ssoConfig.getString("public-key", "").isEmpty()
-                ||  ssoConfig.getString("appli", "").isEmpty()
-                ||  ssoConfig.getString(UtilsViesScolaireFr.URL_PROPERTY_END_LVS, "").isEmpty()) {
+        if (ssoConfig == null || !ssoConfig.containsField("public-key")
+                || !ssoConfig.containsField("appli")
+                || !ssoConfig.containsField(UtilsViesScolaireFr.URL_PROPERTY_END_LVS)
+                || !ssoConfig.containsField("connection-timeout")) {
             log.error("Invalid VieScolaireFR configuration");
         } else {
 
@@ -246,7 +251,7 @@ public class VieScolaireFRController extends SSOController {
             if (Utils.isNotEmpty(publicKey)) {
                 try {
                     X509EncodedKeySpec spec = new X509EncodedKeySpec(Base64.decode(publicKey));
-                    KeyFactory kf = KeyFactory.getInstance(UtilsViesScolaireFr.CRYPTAGE_ALGORTIHME);
+                    KeyFactory kf = KeyFactory.getInstance(UtilsViesScolaireFr.CRYPTAGE_ALGORITHME);
                     viescolairefrPublicKey = kf.generatePublic(spec);
                     configOk = true;
                 } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
