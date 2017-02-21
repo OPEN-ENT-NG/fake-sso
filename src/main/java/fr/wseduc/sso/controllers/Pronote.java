@@ -153,7 +153,7 @@ public class Pronote extends SSOController {
 							}
 						});
 					} else {
-						log.error(response.statusMessage());
+						log.debug(response.statusMessage());
 						handler.handle(new JsonObject().putString("status", "error").putString("message", "pronote.access.error"));
 					}
 					if (!responseIsSent.getAndSet(true)) {
