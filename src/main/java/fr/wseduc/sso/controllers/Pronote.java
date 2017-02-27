@@ -22,7 +22,10 @@ import org.vertx.java.core.logging.impl.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Pronote extends SSOController {
 
@@ -64,7 +67,9 @@ public class Pronote extends SSOController {
 														if (event.isRight()) {
 															final JsonArray ja = event.right().getValue();
 
-															final Integer[] callCount = new Integer[]{ja.size()};
+															final AtomicInteger callCount = new AtomicInteger(ja.size());
+															final List<String> errors = new ArrayList<String>();
+
 															for (int i = 0; i < ja.size(); i++) {
 																final JsonObject joResult = ja.get(i);
 																final JsonArray jaResult = new JsonArray();
@@ -72,13 +77,18 @@ public class Pronote extends SSOController {
 																	@Override
 																	public void handle(JsonObject event) {
 																		if (event.getString("status").equals("ok")) {
-																			callCount[0]--;
-
 																			joResult.removeField("ticket");
 																			joResult.putString("xmlResponse", event.getString("xml"));
 																			jaResult.addObject(joResult);
+																		} else {
+																			//Tolerance to the failure
+																			log.debug("Fail to call pronote : Url --> " + joResult.getString("address", "") + ", message : " +  event.getString("message"));
+																			errors.add(event.getString("message", "pronote.call.error"));
+																		}
 
-																			if (callCount[0] == 0) {
+																		if (callCount.decrementAndGet() == 0) {
+																			//If there is at least one result
+																			if (jaResult.size() > 0) {
 																				pronoteService.storeInCache(userId, jaResult, new Handler<Boolean>() {
 																					@Override
 																					public void handle(Boolean event) {
@@ -89,10 +99,10 @@ public class Pronote extends SSOController {
 																						}
 																					}
 																				});
+																			} else {
+																				//Only the first error is sent
+																				renderError(request, new JsonObject().putString("error", errors.get(0)));
 																			}
-																		} else {
-																			renderError(request, new JsonObject().putString("error", event.getString("message")));
-																			return;
 																		}
 																	}
 																});
@@ -127,7 +137,7 @@ public class Pronote extends SSOController {
 		try {
 			pronoteUri = new URI((jo.getString("address") + pronoteContext));
 		} catch (URISyntaxException e) {
-			log.error("Invalid pronote web service uri", e);
+			log.debug("Invalid pronote web service uri", e);
 			handler.handle(new JsonObject().putString("status", "error").putString("message", "pronote.uri.error"));
 		}
 
@@ -168,7 +178,7 @@ public class Pronote extends SSOController {
 			httpClientRequest.exceptionHandler(new Handler<Throwable>() {
 				@Override
 				public void handle(Throwable event) {
-					log.error(event.getMessage(), event);
+					log.debug(event.getMessage(), event);
 					if (!responseIsSent.getAndSet(true)) {
 						handler.handle(new JsonObject().putString("status", "error").putString("message", "pronote.connection.error"));
 						httpClient.close();
