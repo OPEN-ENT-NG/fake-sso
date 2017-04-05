@@ -122,7 +122,9 @@ public class PronoteServiceImpl implements PronoteService {
 		//ST
 		final JsonObject joST = new JsonObject();
 		joST.putString("ticketParameter", "ticket");
-		joST.putString("service", joApp.getString("app.address") + pronoteContext);
+		final String service = joApp.getString("app.address", "");
+		final String urlSeparator = service.endsWith("/")  ? "" : "/";
+		joST.putString("service", service + urlSeparator + pronoteContext);
 		joST.putString("ticket", "ST-" + UUID.randomUUID().toString());
 		joST.putValue("issued", System.currentTimeMillis());
 		joST.putBoolean("used", Boolean.TRUE);

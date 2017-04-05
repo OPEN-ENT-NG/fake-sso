@@ -135,7 +135,9 @@ public class Pronote extends SSOController {
 		final AtomicBoolean responseIsSent = new AtomicBoolean(false);
 		URI pronoteUri = null;
 		try {
-			pronoteUri = new URI((jo.getString("address") + pronoteContext));
+			final String service = jo.getString("address", "");
+			final String urlSeparator = service.endsWith("/")  ? "" : "/";
+			pronoteUri = new URI(service + urlSeparator + pronoteContext);
 		} catch (URISyntaxException e) {
 			log.debug("Invalid pronote web service uri", e);
 			handler.handle(new JsonObject().putString("status", "error").putString("message", "pronote.uri.error"));
@@ -164,6 +166,12 @@ public class Pronote extends SSOController {
 						});
 					} else {
 						log.debug(response.statusMessage());
+						response.bodyHandler(new Handler<Buffer>() {
+							@Override
+							public void handle(Buffer event) {
+								log.debug("Returning body after PT CALL : " + event.toString("UTF-8"));
+							}
+						});
 						handler.handle(new JsonObject().putString("status", "error").putString("message", "pronote.access.error"));
 					}
 					if (!responseIsSent.getAndSet(true)) {
@@ -203,7 +211,7 @@ public class Pronote extends SSOController {
 	public void setSsoConfig(JsonObject ssoConfig) {
 		casCollection = ssoConfig.getString("cas-collection", "authcas");
 		responseTimeout = ssoConfig.getLong("response-timeout", 2000);
-		pronoteContext = ssoConfig.getString("pronote-context", "/donneesUtilisateur");
+		pronoteContext = ssoConfig.getString("pronote-context", "donneesUtilisateur");
 	}
 
 }
