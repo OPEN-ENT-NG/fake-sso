@@ -145,8 +145,9 @@ public class Pronote extends SSOController {
 
 		if (pronoteUri != null) {
 			final HttpClient httpClient = generateHttpClient(pronoteUri);
+			final String pronoteUrl = pronoteUri.toString()  + "?ticket=" + jo.getString("ticket") + "&methode=" + PROXY_METHOD;
 
-			final HttpClientRequest httpClientRequest = httpClient.post(pronoteUri.toString()  + "?ticket=" + jo.getString("ticket") + "&methode=" + PROXY_METHOD, new Handler<HttpClientResponse>() {
+			final HttpClientRequest httpClientRequest = httpClient.post(pronoteUrl, new Handler<HttpClientResponse>() {
 				@Override
 				public void handle(HttpClientResponse response) {
 					if (response.statusCode() == 200) {
@@ -162,6 +163,9 @@ public class Pronote extends SSOController {
 							public void handle(Void end) {
 								final String xml = buff.toString();
 								handler.handle(new JsonObject().putString("status", "ok").putString("xml", xml));
+								if (!responseIsSent.getAndSet(true)) {
+									httpClient.close();
+								}
 							}
 						});
 					} else {
@@ -169,13 +173,13 @@ public class Pronote extends SSOController {
 						response.bodyHandler(new Handler<Buffer>() {
 							@Override
 							public void handle(Buffer event) {
-								log.debug("Returning body after PT CALL : " + event.toString("UTF-8"));
+								log.debug("Returning body after PT CALL : " +  pronoteUrl + ", Returning body : " + event.toString("UTF-8"));
+								if (!responseIsSent.getAndSet(true)) {
+									httpClient.close();
+								}
 							}
 						});
 						handler.handle(new JsonObject().putString("status", "error").putString("message", "pronote.access.error"));
-					}
-					if (!responseIsSent.getAndSet(true)) {
-						httpClient.close();
 					}
 				}
 			});
