@@ -23,11 +23,11 @@ import fr.wseduc.webutils.http.Binding;
 import org.entcore.common.http.filter.ResourcesProvider;
 import org.entcore.common.sql.Sql;
 import org.entcore.common.user.UserInfos;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.eventbus.Message;
-import org.vertx.java.core.http.HttpServerRequest;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
+import io.vertx.core.Handler;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 public class CredentialsFilter implements ResourcesProvider {
 
@@ -42,10 +42,10 @@ public class CredentialsFilter implements ResourcesProvider {
 			public void handle(Message<JsonObject> message) {
 				resourceRequest.resume();
 				handler.handle("ok".equals(message.body().getString("status")) &&
-						message.body().getArray("results") != null && message.body().getArray("results").size() == 1 &&
-						message.body().getArray("results").get(0) != null &&
-						message.body().getArray("results").<JsonArray>get(0).size() == 1 &&
-						1l == message.body().getArray("results").<JsonArray>get(0).<Long>get(0)
+						message.body().getJsonArray("results") != null && message.body().getJsonArray("results").size() == 1 &&
+						message.body().getJsonArray("results").getJsonArray(0) != null &&
+						message.body().getJsonArray("results").getJsonArray(0).size() == 1 &&
+						1l == message.body().getJsonArray("results").getJsonArray(0).getLong(0)
 				);
 			}
 		});

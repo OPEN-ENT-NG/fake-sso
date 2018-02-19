@@ -24,9 +24,9 @@ import fr.wseduc.webutils.Either;
 import org.entcore.common.sql.Sql;
 import org.entcore.common.sql.SqlStatementsBuilder;
 import org.entcore.common.validation.StringValidation;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
+import io.vertx.core.Handler;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 import static org.entcore.common.sql.SqlResult.*;
 
@@ -50,9 +50,9 @@ public class DefaultKeyRingService implements KeyRingService {
 				if (event.isRight()) {
 					final Long id = event.right().getValue().getLong("next_id");
 					final String table = tableName + "_" + id;
-					data.putNumber("id", id);
-					data.putString("service_id", table);
-					JsonObject formSchema = data.getObject("form_schema");
+					data.put("id", id);
+					data.put("service_id", table);
+					JsonObject formSchema = data.getJsonObject("form_schema");
 					String s = createServiceQuery(table, formSchema);
 					SqlStatementsBuilder sb = new SqlStatementsBuilder();
 					sb.insert("sso.keyring", data, "id, service_id");
@@ -70,7 +70,7 @@ public class DefaultKeyRingService implements KeyRingService {
 				.append("CREATE TABLE sso.").append(tableName).append(" ( ")
 				.append("id BIGSERIAL PRIMARY KEY, ")
 				.append("user_id VARCHAR(50) NOT NULL UNIQUE");
-		for (String attr: formSchema.getFieldNames()) {
+		for (String attr: formSchema.fieldNames()) {
 			s.append(", ").append(attr).append(" VARCHAR(256) NOT NULL");
 		}
 		s.append(");");
@@ -81,20 +81,20 @@ public class DefaultKeyRingService implements KeyRingService {
 	public void alter(final String serviceId, final JsonObject data, final Handler<Either<String, JsonObject>> handler) {
 		StringBuilder sb = new StringBuilder();
 		final JsonArray values = new JsonArray();
-		for (String attr : data.getFieldNames()) {
+		for (String attr : data.fieldNames()) {
 			sb.append(attr).append(" = ?, ");
 			values.add(data.getValue(attr));
 		}
 		sb.deleteCharAt(sb.length() - 2);
 		values.add(serviceId);
 		final String query = "UPDATE sso.keyring SET " + sb.toString() + "WHERE service_id = ? ";
-		if (data.containsField("form_schema")) {
+		if (data.containsKey("form_schema")) {
 			description(serviceId, new Handler<Either<String, JsonObject>>() {
 				@Override
 				public void handle(Either<String, JsonObject> r) {
 					if (r.isRight()) {
-						JsonObject cfs = r.right().getValue().getObject("form_schema");
-						JsonObject rfs = data.getObject("form_schema");
+						JsonObject cfs = r.right().getValue().getJsonObject("form_schema");
+						JsonObject rfs = data.getJsonObject("form_schema");
 						if (rfs != null && !rfs.equals(cfs)) {
 							SqlStatementsBuilder sb = new SqlStatementsBuilder();
 							sb.raw(dropServiceQuery(serviceId));

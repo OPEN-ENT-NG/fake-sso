@@ -35,10 +35,10 @@ import fr.wseduc.webutils.request.RequestUtils;
 import org.entcore.common.http.filter.ResourceFilter;
 import org.entcore.common.user.UserInfos;
 import org.entcore.common.user.UserUtils;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.http.HttpServerRequest;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
+import io.vertx.core.Handler;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 import java.util.HashSet;
 
@@ -64,9 +64,9 @@ public class CredentialsController extends BaseController {
 							keyRingService.description(serviceId, new Handler<Either<String, JsonObject>>() {
 								@Override
 								public void handle(Either<String, JsonObject> r) {
-									if (r.isRight() && r.right().getValue().getObject("form_schema") != null) {
+									if (r.isRight() && r.right().getValue().getJsonObject("form_schema") != null) {
 										if (formDataValidation(r, body, request)) return;
-										body.putString("user_id", user.getUserId());
+										body.put("user_id", user.getUserId());
 										credentialsService.insert(serviceId, body, notEmptyResponseHandler(request, 201));
 									} else {
 										badRequest(request, "invalid.service.id");
@@ -93,7 +93,7 @@ public class CredentialsController extends BaseController {
 				keyRingService.description(serviceId, new Handler<Either<String, JsonObject>>() {
 					@Override
 					public void handle(Either<String, JsonObject> r) {
-						if (r.isRight() && r.right().getValue().getObject("form_schema") != null) {
+						if (r.isRight() && r.right().getValue().getJsonObject("form_schema") != null) {
 							if (formDataValidation(r, body, request)) return;
 							credentialsService.update(serviceId, request.params().get("id"), body,
 									notEmptyResponseHandler(request));
@@ -107,14 +107,14 @@ public class CredentialsController extends BaseController {
 	}
 
 	private boolean formDataValidation(Either<String, JsonObject> r, JsonObject body, HttpServerRequest request) {
-		JsonObject schema = r.right().getValue().getObject("form_schema");
-		for (String attr: new HashSet<>(body.getFieldNames())) {
-			if (!schema.containsField(attr)) {
-				body.removeField(attr);
+		JsonObject schema = r.right().getValue().getJsonObject("form_schema");
+		for (String attr: new HashSet<>(body.fieldNames())) {
+			if (!schema.containsKey(attr)) {
+				body.remove(attr);
 			}
 		}
-		for (String attr: schema.getFieldNames()) {
-			if (!body.containsField(attr)) {
+		for (String attr: schema.fieldNames()) {
+			if (!body.containsKey(attr)) {
 				badRequest(request, "missing.attr." + attr);
 				return true;
 			}
@@ -149,16 +149,16 @@ public class CredentialsController extends BaseController {
 			public void handle(Either<String, JsonObject> r) {
 				if (r.isRight()) {
 					JsonObject params = r.right().getValue();
-					JsonObject schema = params.getObject("form_schema");
+					JsonObject schema = params.getJsonObject("form_schema");
 					if (schema != null) {
 						JsonArray form = new JsonArray();
-						for (String key : schema.getFieldNames()) {
-							JsonObject j = schema.getObject(key);
+						for (String key : schema.fieldNames()) {
+							JsonObject j = schema.getJsonObject(key);
 							if (j != null) {
-								form.add(j.putString("name", key));
+								form.add(j.put("name", key));
 							}
 						}
-						params.putArray("form", form);
+						params.put("form", form);
 					}
 					renderView(request, params, "keyring/credentials.html", null);
 				} else {
@@ -183,7 +183,7 @@ public class CredentialsController extends BaseController {
 							if (r.isRight()) {
 								JsonArray res = r.right().getValue();
 								if (res != null && res.size() == 1) {
-									renderView(request, formatMustacheObject(res.<JsonObject>get(0), serviceId),
+									renderView(request, formatMustacheObject(res.getJsonObject(0), serviceId),
 											"keyring/authenticate.html", null);
 								} else {
 									editView(request);
@@ -203,18 +203,18 @@ public class CredentialsController extends BaseController {
 	private JsonObject formatMustacheObject(JsonObject json, String serviceId) {
 		JsonObject j = new JsonObject();
 		if (json != null) {
-			j.putString("url", json.getString("url"));
-			j.putString("name", json.getString("name"));
-			j.putString("service_id", serviceId);
-			json.removeField("url");
-			json.removeField("name");
+			j.put("url", json.getString("url"));
+			j.put("name", json.getString("name"));
+			j.put("service_id", serviceId);
+			json.remove("url");
+			json.remove("name");
 			JsonArray form = new JsonArray();
-			for (String attr : json.getFieldNames()) {
+			for (String attr : json.fieldNames()) {
 				if (!"user_id".equals(attr) && !"id".equals(attr)) {
-					form.add(new JsonObject().putString("name", attr).putString("value", json.getString(attr)));
+					form.add(new JsonObject().put("name", attr).put("value", json.getString(attr)));
 				}
 			}
-			j.putArray("form", form);
+			j.put("form", form);
 		}
 		return j;
 	}

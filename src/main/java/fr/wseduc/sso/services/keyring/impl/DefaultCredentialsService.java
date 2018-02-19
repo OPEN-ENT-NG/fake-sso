@@ -24,12 +24,12 @@ import fr.wseduc.sso.services.keyring.KeyRingService;
 import fr.wseduc.webutils.Either;
 import fr.wseduc.webutils.security.Blowfish;
 import org.entcore.common.sql.Sql;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.eventbus.Message;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.core.logging.Logger;
-import org.vertx.java.core.logging.impl.LoggerFactory;
+import io.vertx.core.Handler;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 import java.security.GeneralSecurityException;
 
@@ -66,14 +66,14 @@ public class DefaultCredentialsService implements CredentialsService {
 			public void handle(Either<String, JsonObject> r) {
 				if (r.isRight()) {
 					JsonObject j = r.right().getValue();
-					if (j != null && j.getObject("form_schema") != null) {
-						JsonObject schema = j.getObject("form_schema");
+					if (j != null && j.getJsonObject("form_schema") != null) {
+						JsonObject schema = j.getJsonObject("form_schema");
 						JsonObject output = new JsonObject();
 						if (data.getString("user_id") != null) {
-							output.putString("user_id", data.getString("user_id"));
+							output.put("user_id", data.getString("user_id"));
 						}
-						for (String attr: data.getFieldNames()) {
-							JsonObject p = schema.getObject(attr);
+						for (String attr: data.fieldNames()) {
+							JsonObject p = schema.getJsonObject(attr);
 							if (p != null) {
 								String content = data.getString(attr);
 								if (content == null) {
@@ -82,14 +82,14 @@ public class DefaultCredentialsService implements CredentialsService {
 								}
 								if ("password".equals(p.getString("type"))) {
 									try {
-										output.putString(attr, Blowfish.encrypt(content, cryptKey));
+										output.put(attr, Blowfish.encrypt(content, cryptKey));
 									} catch (GeneralSecurityException e) {
 										log.error(e.getMessage(), e);
 										handler.handle(new Either.Left<String, JsonObject>(e.getMessage()));
 										return;
 									}
 								} else {
-									output.putString(attr, content);
+									output.put(attr, content);
 								}
 							}
 						}
@@ -123,17 +123,17 @@ public class DefaultCredentialsService implements CredentialsService {
 				public void handle(Either<String, JsonObject> r) {
 					if (r.isRight()) {
 						JsonObject j = r.right().getValue();
-						if (j != null && j.getObject("form_schema") != null) {
-							JsonObject schema = j.getObject("form_schema");
+						if (j != null && j.getJsonObject("form_schema") != null) {
+							JsonObject schema = j.getJsonObject("form_schema");
 							for (Object o : a) {
 								if (! (o instanceof JsonObject)) continue;
 								JsonObject json = (JsonObject) o;
-								for (String attr: json.getFieldNames()) {
-									JsonObject p = schema.getObject(attr);
+								for (String attr: json.fieldNames()) {
+									JsonObject p = schema.getJsonObject(attr);
 									String c;
 									if (p != null && "password".equals(p.getString("type")) && (c = json.getString(attr)) != null) {
 										try {
-											json.putString(attr, Blowfish.decrypt(c, cryptKey));
+											json.put(attr, Blowfish.decrypt(c, cryptKey));
 										} catch (GeneralSecurityException e) {
 											log.error(e.getMessage(), e);
 										}
@@ -174,7 +174,7 @@ public class DefaultCredentialsService implements CredentialsService {
 					StringBuilder s = new StringBuilder()
 							.append("UPDATE sso.").append(serviceId).append(" SET ");
 					JsonArray params = new JsonArray();
-					for (String attr : d.getFieldNames()) {
+					for (String attr : d.fieldNames()) {
 						s.append(attr).append(" = ?,");
 						params.add(d.getValue(attr));
 					}

@@ -26,18 +26,18 @@ import fr.wseduc.sso.services.keyring.impl.DefaultCredentialsService;
 import fr.wseduc.sso.services.keyring.KeyRingService;
 import fr.wseduc.sso.services.keyring.impl.DefaultKeyRingService;
 import org.entcore.common.http.BaseServer;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 public class FakeSSO extends BaseServer {
 
 	@Override
-	public void start() {
+	public void start() throws Exception {
 		super.start();
 
 		KeyRingService keyRingService = new DefaultKeyRingService();
 		DefaultCredentialsService credentialsService = new DefaultCredentialsService(
-				container.config().getString("crypt-key", "_"));
+				config.getString("crypt-key", "_"));
 		credentialsService.setKeyRingService(keyRingService);
 
 		KeyRingController keyRingController = new KeyRingController();
@@ -53,7 +53,7 @@ public class FakeSSO extends BaseServer {
 	}
 
 	private void loadSSOControllers() {
-		JsonArray sc = config.getArray("sso-controllers");
+		JsonArray sc = config.getJsonArray("sso-controllers");
 		if (sc != null) {
 			for (Object o : sc) {
 				if (!(o instanceof JsonObject)) continue;
@@ -62,7 +62,7 @@ public class FakeSSO extends BaseServer {
 				if (className != null && !className.trim().isEmpty()) {
 					try {
 						SSOController controller = (SSOController) Class.forName(className).newInstance();
-						controller.setSsoConfig(j.getObject("config"));
+						controller.setSsoConfig(j.getJsonObject("config"));
 						addController(controller);
 						log.info("Init SSO controller : " + className);
 					} catch (InstantiationException | IllegalAccessException | ClassNotFoundException | ClassCastException e) {

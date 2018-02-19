@@ -7,18 +7,15 @@ import fr.wseduc.sso.services.pronote.PronoteService;
 import fr.wseduc.sso.services.pronote.PronoteServiceImpl;
 import fr.wseduc.webutils.Either;
 import fr.wseduc.webutils.http.Renders;
+import io.vertx.core.http.*;
 import org.entcore.common.user.UserInfos;
 import org.entcore.common.user.UserUtils;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.buffer.Buffer;
-import org.vertx.java.core.http.HttpClient;
-import org.vertx.java.core.http.HttpClientRequest;
-import org.vertx.java.core.http.HttpClientResponse;
-import org.vertx.java.core.http.HttpServerRequest;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.core.logging.Logger;
-import org.vertx.java.core.logging.impl.LoggerFactory;
+import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -53,7 +50,7 @@ public class Pronote extends SSOController {
 						public void handle(JsonObject event) {
 							if (event != null && event.getString("user") != null) {
 								//from cache
-								renderJson(request, event.getArray("results"));
+								renderJson(request, event.getJsonArray("results"));
 							} else {
 								pronoteService.getPronoteApps(user.getGroupsIds(), new Handler<Either<String, JsonArray>>() {
 									@Override
@@ -71,15 +68,15 @@ public class Pronote extends SSOController {
 															final List<String> errors = new ArrayList<String>();
 
 															for (int i = 0; i < ja.size(); i++) {
-																final JsonObject joResult = ja.get(i);
+																final JsonObject joResult = ja.getJsonObject(i);
 																final JsonArray jaResult = new JsonArray();
 																callPronote(joResult, new Handler<JsonObject>() {
 																	@Override
 																	public void handle(JsonObject event) {
 																		if (event.getString("status").equals("ok")) {
-																			joResult.removeField("ticket");
-																			joResult.putString("xmlResponse", event.getString("xml"));
-																			jaResult.addObject(joResult);
+																			joResult.remove("ticket");
+																			joResult.put("xmlResponse", event.getString("xml"));
+																			jaResult.add(joResult);
 																		} else {
 																			//Tolerance to the failure
 																			log.debug("Fail to call pronote : Url --> " + joResult.getString("address", "") + ", message : " +  event.getString("message"));
@@ -101,19 +98,19 @@ public class Pronote extends SSOController {
 																				});
 																			} else {
 																				//Only the first error is sent
-																				renderError(request, new JsonObject().putString("error", errors.get(0)));
+																				renderError(request, new JsonObject().put("error", errors.get(0)));
 																			}
 																		}
 																	}
 																});
 															}
 														} else {
-															Renders.renderError(request, new JsonObject().putString("error", event.left().getValue()));
+															Renders.renderError(request, new JsonObject().put("error", event.left().getValue()));
 														}
 													}
 												});
 											} else {
-												Renders.renderError(request, new JsonObject().putString("error", "pronote.unregistered.error"));
+												Renders.renderError(request, new JsonObject().put("error", "pronote.unregistered.error"));
 											}
 										} else {
 											Renders.renderError(request);
@@ -140,7 +137,7 @@ public class Pronote extends SSOController {
 			pronoteUri = new URI(service + urlSeparator + pronoteContext);
 		} catch (URISyntaxException e) {
 			log.debug("Invalid pronote web service uri", e);
-			handler.handle(new JsonObject().putString("status", "error").putString("message", "pronote.uri.error"));
+			handler.handle(new JsonObject().put("status", "error").put("message", "pronote.uri.error"));
 		}
 
 		if (pronoteUri != null) {
@@ -151,8 +148,8 @@ public class Pronote extends SSOController {
 				@Override
 				public void handle(HttpClientResponse response) {
 					if (response.statusCode() == 200) {
-						final Buffer buff = new Buffer();
-						response.dataHandler(new Handler<Buffer>() {
+						final Buffer buff = Buffer.buffer();
+						response.handler(new Handler<Buffer>() {
 							@Override
 							public void handle(Buffer event) {
 								buff.appendBuffer(event);
@@ -162,7 +159,7 @@ public class Pronote extends SSOController {
 							@Override
 							public void handle(Void end) {
 								final String xml = buff.toString();
-								handler.handle(new JsonObject().putString("status", "ok").putString("xml", xml));
+								handler.handle(new JsonObject().put("status", "ok").put("xml", xml));
 								if (!responseIsSent.getAndSet(true)) {
 									httpClient.close();
 								}
@@ -179,7 +176,7 @@ public class Pronote extends SSOController {
 								}
 							}
 						});
-						handler.handle(new JsonObject().putString("status", "error").putString("message", "pronote.access.error"));
+						handler.handle(new JsonObject().put("status", "error").put("message", "pronote.access.error"));
 					}
 				}
 			});
@@ -192,7 +189,7 @@ public class Pronote extends SSOController {
 				public void handle(Throwable event) {
 					log.debug(event.getMessage(), event);
 					if (!responseIsSent.getAndSet(true)) {
-						handler.handle(new JsonObject().putString("status", "error").putString("message", "pronote.connection.error"));
+						handler.handle(new JsonObject().put("status", "error").put("message", "pronote.connection.error"));
 						httpClient.close();
 					}
 				}
@@ -202,19 +199,20 @@ public class Pronote extends SSOController {
 	}
 
 	private HttpClient generateHttpClient(URI uri) {
-		return vertx.createHttpClient()
-				.setHost(uri.getHost())
-				.setPort((uri.getPort() > 0) ? uri.getPort() : ("https".equals(uri.getScheme()) ? 443 : 80))
+		HttpClientOptions options = new HttpClientOptions()
+				.setDefaultHost(uri.getHost())
+				.setDefaultPort((uri.getPort() > 0) ? uri.getPort() : ("https".equals(uri.getScheme()) ? 443 : 80))
 				.setVerifyHost(false)
 				.setTrustAll(true)
-				.setSSL("https".equals(uri.getScheme()))
+				.setSsl("https".equals(uri.getScheme()))
 				.setKeepAlive(false);
+		return vertx.createHttpClient(options);
 	}
 
 	@Override
 	public void setSsoConfig(JsonObject ssoConfig) {
 		casCollection = ssoConfig.getString("cas-collection", "authcas");
-		responseTimeout = ssoConfig.getLong("response-timeout", 2000);
+		responseTimeout = ssoConfig.getLong("response-timeout", 2000l);
 		pronoteContext = ssoConfig.getString("pronote-context", "donneesUtilisateur");
 	}
 

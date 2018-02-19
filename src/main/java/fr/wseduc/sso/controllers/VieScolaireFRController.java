@@ -5,18 +5,14 @@ import fr.wseduc.security.ActionType;
 import fr.wseduc.security.SecuredAction;
 import fr.wseduc.sso.utils.UtilsViesScolaireFr;
 import fr.wseduc.webutils.Utils;
+import io.vertx.core.http.*;
 import org.entcore.common.user.UserInfos;
 import org.entcore.common.user.UserUtils;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.buffer.Buffer;
-import org.vertx.java.core.http.HttpClient;
-import org.vertx.java.core.http.HttpClientRequest;
-import org.vertx.java.core.http.HttpClientResponse;
-import org.vertx.java.core.http.HttpServerRequest;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.core.json.impl.Base64;
-import org.vertx.java.core.logging.Logger;
-import org.vertx.java.core.logging.impl.LoggerFactory;
+import io.vertx.core.Handler;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 import javax.crypto.Cipher;
 import java.net.URI;
@@ -30,6 +26,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Base64;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -85,8 +82,8 @@ public class VieScolaireFRController extends SSOController {
                             @Override
                             public void handle(HttpClientResponse response) {
                                 if (response.statusCode() == 200) {
-                                    final Buffer ticketVSFRBuffer = new Buffer();
-                                        response.dataHandler(new Handler<Buffer>() {
+                                    final Buffer ticketVSFRBuffer = Buffer.buffer();
+                                        response.handler(new Handler<Buffer>() {
                                             @Override
                                             public void handle(Buffer event) {
                                         ticketVSFRBuffer.appendBuffer(event);
@@ -103,7 +100,7 @@ public class VieScolaireFRController extends SSOController {
                                             try {
                                                 final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
                                                 cipher.init(Cipher.ENCRYPT_MODE, viescolairefrPublicKey);
-                                                final String urlCrypte = URLEncoder.encode(Base64.encodeBytes(
+                                                final String urlCrypte = URLEncoder.encode(Base64.getEncoder().encodeToString(
                                                         cipher.doFinal(userParametre.getBytes("UTF-8"))), "UTF-8");
 
                                                 String urIAppel = UtilsViesScolaireFr.URL_KEY_CRYPT + urlCrypte;
@@ -220,13 +217,14 @@ public class VieScolaireFRController extends SSOController {
      * @return Http client
      */
     private HttpClient generateHttpClient(URI uri) {
-        return vertx.createHttpClient()
-                .setHost(uri.getHost())
-                .setPort((uri.getPort() > 0) ? uri.getPort() : ("https".equals(uri.getScheme()) ? 443 : 80))
+        HttpClientOptions options = new HttpClientOptions()
+                .setDefaultHost(uri.getHost())
+                .setDefaultPort((uri.getPort() > 0) ? uri.getPort() : ("https".equals(uri.getScheme()) ? 443 : 80))
                 .setVerifyHost(false)
                 .setTrustAll(true)
-                .setSSL("https".equals(uri.getScheme()))
+                .setSsl("https".equals(uri.getScheme()))
                 .setKeepAlive(false);
+        return vertx.createHttpClient(options);
     }
 
     /**
@@ -235,10 +233,10 @@ public class VieScolaireFRController extends SSOController {
      */
     @Override
     public void setSsoConfig(JsonObject ssoConfig) {
-        if (ssoConfig == null || !ssoConfig.containsField("public-key")
-                || !ssoConfig.containsField("appli")
-                || !ssoConfig.containsField(UtilsViesScolaireFr.URL_PROPERTY_END_LVS)
-                || !ssoConfig.containsField("connection-timeout")) {
+        if (ssoConfig == null || !ssoConfig.containsKey("public-key")
+                || !ssoConfig.containsKey("appli")
+                || !ssoConfig.containsKey(UtilsViesScolaireFr.URL_PROPERTY_END_LVS)
+                || !ssoConfig.containsKey("connection-timeout")) {
             log.error("Invalid VieScolaireFR configuration");
         } else {
 
@@ -250,7 +248,7 @@ public class VieScolaireFRController extends SSOController {
             String publicKey = ssoConfig.getString("public-key");
             if (Utils.isNotEmpty(publicKey)) {
                 try {
-                    X509EncodedKeySpec spec = new X509EncodedKeySpec(Base64.decode(publicKey));
+                    X509EncodedKeySpec spec = new X509EncodedKeySpec(Base64.getDecoder().decode(publicKey));
                     KeyFactory kf = KeyFactory.getInstance(UtilsViesScolaireFr.CRYPTAGE_ALGORITHME);
                     viescolairefrPublicKey = kf.generatePublic(spec);
                     configOk = true;
