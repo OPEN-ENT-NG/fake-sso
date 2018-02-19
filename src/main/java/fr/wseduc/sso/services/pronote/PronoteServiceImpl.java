@@ -4,13 +4,14 @@ import fr.wseduc.mongodb.MongoDb;
 import fr.wseduc.webutils.Either;
 import org.entcore.common.mongodb.MongoDbResult;
 import org.entcore.common.neo4j.Neo4j;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.eventbus.Message;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.core.logging.Logger;
-import org.vertx.java.core.logging.impl.LoggerFactory;
+import io.vertx.core.Handler;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,8 +38,8 @@ public class PronoteServiceImpl implements PronoteService {
 						"WHERE app.casType = {pronoteCasType} AND g.id IN {groupIds} return distinct app.structureId, app.address";
 
 		JsonObject params = new JsonObject()
-				.putString("pronoteCasType", PRONOTE_CAS_TYPE)
-				.putArray("groupIds", new JsonArray(groupIds.toArray()));
+				.put("pronoteCasType", PRONOTE_CAS_TYPE)
+				.put("groupIds", new JsonArray(groupIds));
 
 		neo4j.execute(query, params, validResultHandler(handler));
 	}
@@ -49,15 +50,15 @@ public class PronoteServiceImpl implements PronoteService {
 		final JsonArray jaCAS = new JsonArray();
 
 		for (int i = 0; i < appArray.size(); i++) {
-			final JsonObject joApp = appArray.get(i);
+			final JsonObject joApp = appArray.getJsonObject(i);
 			final String ticket = generateCasJson(userId, pronoteContext, jaCAS, joApp);
 
 			final JsonObject joResult = new JsonObject();
-			joResult.putString("ticket", ticket);
-			joResult.putString("structureId", joApp.getString("app.structureId"));
-			joResult.putString("address", joApp.getString("app.address"));
+			joResult.put("ticket", ticket);
+			joResult.put("structureId", joApp.getString("app.structureId"));
+			joResult.put("address", joApp.getString("app.address"));
 
-			jaResult.addObject(joResult);
+			jaResult.add(joResult);
 		}
 
 		mongo.insert(collection, jaCAS, new Handler<Message<JsonObject>>() {
@@ -75,7 +76,7 @@ public class PronoteServiceImpl implements PronoteService {
 
 	@Override
 	public void getFromCache(String userId, final Handler<JsonObject> handler) {
-		final JsonObject matcher = new JsonObject().putString("user", userId);
+		final JsonObject matcher = new JsonObject().put("user", userId);
 
 
 		mongo.findOne(CACHE_COLLECTION, matcher, MongoDbResult.validResultHandler(new Handler<Either<String, JsonObject>>() {
@@ -94,9 +95,9 @@ public class PronoteServiceImpl implements PronoteService {
 	@Override
 	public void storeInCache(String userId, JsonArray ja, final Handler<Boolean> handler) {
 		final JsonObject joCache = new JsonObject();
-		joCache.putString("user", userId);
-		joCache.putObject("insertedAt", MongoDb.now());
-		joCache.putArray("results", ja);
+		joCache.put("user", userId);
+		joCache.put("insertedAt", MongoDb.now());
+		joCache.put("results", ja);
 
 		mongo.insert(CACHE_COLLECTION, joCache, new Handler<Message<JsonObject>>() {
 			@Override
@@ -114,49 +115,49 @@ public class PronoteServiceImpl implements PronoteService {
 	private String generateCasJson(String userId, String pronoteContext, JsonArray jaCAS, JsonObject joApp) {
 		//due to the checking implementation of the service, generating a ST by url (ST service == TARGET Proxy service)
 		final JsonObject joCAS = new JsonObject();
-		joCAS.putString("id", UUID.randomUUID().toString());
-		joCAS.putString("user", userId);
-		joCAS.putBoolean("loggedIn", Boolean.TRUE);
-		joCAS.putObject("updatedAt", MongoDb.now());
+		joCAS.put("id", UUID.randomUUID().toString());
+		joCAS.put("user", userId);
+		joCAS.put("loggedIn", Boolean.TRUE);
+		joCAS.put("updatedAt", MongoDb.now());
 
 		//ST
 		final JsonObject joST = new JsonObject();
-		joST.putString("ticketParameter", "ticket");
+		joST.put("ticketParameter", "ticket");
 		final String service = joApp.getString("app.address", "");
 		final String urlSeparator = service.endsWith("/")  ? "" : "/";
-		joST.putString("service", service + urlSeparator + pronoteContext);
-		joST.putString("ticket", "ST-" + UUID.randomUUID().toString());
-		joST.putValue("issued", System.currentTimeMillis());
-		joST.putBoolean("used", Boolean.TRUE);
+		joST.put("service", service + urlSeparator + pronoteContext);
+		joST.put("ticket", "ST-" + UUID.randomUUID().toString());
+		joST.put("issued", System.currentTimeMillis());
+		joST.put("used", Boolean.TRUE);
 
 		//PGT
 		final JsonObject joPGT = new JsonObject();
-		joPGT.putString("pgtId", "PGT-" + UUID.randomUUID().toString());
-		joPGT.putString("pgtIOU", "PGTIOU-" + UUID.randomUUID().toString());
-		joPGT.putArray("pgtUrls", new JsonArray(new String[]{FAKE_PGT_URL}));
+		joPGT.put("pgtId", "PGT-" + UUID.randomUUID().toString());
+		joPGT.put("pgtIOU", "PGTIOU-" + UUID.randomUUID().toString());
+		joPGT.put("pgtUrls", new JsonArray(Arrays.asList(FAKE_PGT_URL)));
 
 		//PT
 		final JsonObject joPT = new JsonObject();
 		final String pt = "PT-" + UUID.randomUUID().toString();
-		joPT.putString("pgId", pt);
-		joPT.putBoolean("used", Boolean.FALSE);
-		joPT.putValue("issued", System.currentTimeMillis());
+		joPT.put("pgId", pt);
+		joPT.put("used", Boolean.FALSE);
+		joPT.put("issued", System.currentTimeMillis());
 
 		//add PT to PGT object
 		final JsonArray jaPT = new JsonArray();
-		jaPT.addObject(joPT);
-		joPGT.putArray("proxyTickets", jaPT);
+		jaPT.add(joPT);
+		joPGT.put("proxyTickets", jaPT);
 
 		//add PGT to ST object
-		joST.putObject("pgt", joPGT);
+		joST.put("pgt", joPGT);
 
 		//add ST to cas object
 		final JsonArray jaST = new JsonArray();
-		jaST.addObject(joST);
-		joCAS.putArray("serviceTickets", jaST);
+		jaST.add(joST);
+		joCAS.put("serviceTickets", jaST);
 
 
-		jaCAS.addObject(joCAS);
+		jaCAS.add(joCAS);
 
 		return pt;
 	}
