@@ -1,7 +1,7 @@
 # Description
 
-Fake SSO is a module use to "host" vendor specific authentication's protocol.
-It is design to isolate exotic implementation from standard ones.
+Fake SSO module is used to manage vendor specific authentication's protocol and mimic SSO workflow for the end user
+It is designed to isolate exotic implementations from standard ones.
 
 Fake SSO already provided implementation for :
 
@@ -12,7 +12,7 @@ Fake SSO already provided implementation for :
 
 # How to
 
-To add a new vendor specific SSO implementation you have to follow the 3 next steps
+To add a new vendor specific SSO implementation, follow the 3 next steps
 
 ## 1. Write a controller that extends SSOController
 
@@ -28,13 +28,12 @@ To add a new vendor specific SSO implementation you have to follow the 3 next st
 		}
 
 In `setSsoConfig`'s implementation you will recieve your specific configuration's properties.
-You will have to typically proxy the call to remote's application authentication with an controller's action.
+Typically you proxy the remote service authentication in a controller endpoint.
 See example of `fr.wseduc.sso.controllers.CharlemagneController` to figure out that mechanics
 
-## 2. Register your new SSO controller in deployment configuration's file
+## 2. Declare your new SSO controller in deployment configuration's file
 
-Add your configuration in `/deployment/fake-sso/conf.json.template` inside 'sso-controllers' array
-It have to follow the next template :
+Complete 'sso-controllers array 'in `/deployment/fake-sso/conf.json.template`. Your entry must follow the next schema :
 
 		{
 			"class" : "fr.wseduc.sso.controllers.YourSSOController",
