@@ -106,8 +106,12 @@ public class VieScolaireFRController extends SSOController {
                                                 String urIAppel = UtilsViesScolaireFr.URL_KEY_CRYPT + urlCrypte;
 
                                                 log.debug("Crypted VSFR URL build : " + urIAppel);
-                                                // REDIRECTION vers VSFR
-                                                redirect(request, urlVieScolaireFREtablissement, urIAppel);
+
+                                                if(request.params().contains("noRedirect") && Boolean.valueOf(request.params().get("noRedirect"))) {
+                                                    renderJson(request, new JsonObject().put("link", urlVieScolaireFREtablissement + urIAppel), 200);
+                                                } else {
+                                                    redirect(request, urlVieScolaireFREtablissement, urIAppel);
+                                                }
                                             } catch (Exception e) {
                                                 log.error("Error encrypting rsa viescolairefr url",e);
                                                 renderError(request);
