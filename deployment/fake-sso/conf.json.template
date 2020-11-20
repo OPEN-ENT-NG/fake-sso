@@ -1,5 +1,5 @@
     {
-      "name": "fr.wseduc~fake-sso~1.10.0",
+      "name": "fr.wseduc~fake-sso~1.10-SNAPSHOT",
       "config": {
         "main" : "fr.wseduc.sso.FakeSSO",
         "path-prefix" : "sso",
