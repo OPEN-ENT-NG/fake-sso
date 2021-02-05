@@ -58,7 +58,7 @@ public class Pronote extends SSOController {
 										if (event.isRight()) {
 											final JsonArray appArray = event.right().getValue();
 											if (appArray.size() > 0) {
-												pronoteService.generateTicketByApp(appArray, userId, pronoteContext, casCollection, new Handler<Either<String, JsonArray>>() {
+												pronoteService.generateTicketByApp(appArray, user, pronoteContext, casCollection, new Handler<Either<String, JsonArray>>() {
 													@Override
 													public void handle(Either<String, JsonArray> event) {
 														if (event.isRight()) {

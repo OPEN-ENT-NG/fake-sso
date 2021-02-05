@@ -10,8 +10,10 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.entcore.common.user.UserInfos;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -44,14 +46,15 @@ public class PronoteServiceImpl implements PronoteService {
 		neo4j.execute(query, params, validResultHandler(handler));
 	}
 
-	public void generateTicketByApp(JsonArray appArray, String userId, String pronoteContext, String collection, final Handler<Either<String, JsonArray>> handler) {
+	@Override
+	public void generateTicketByApp(JsonArray appArray, UserInfos user, String pronoteContext, String collection, final Handler<Either<String, JsonArray>> handler) {
 
 		final JsonArray jaResult = new JsonArray();
 		final JsonArray jaCAS = new JsonArray();
 
 		for (int i = 0; i < appArray.size(); i++) {
 			final JsonObject joApp = appArray.getJsonObject(i);
-			final String ticket = generateCasJson(userId, pronoteContext, jaCAS, joApp);
+			final String ticket = generateCasJson(user, pronoteContext, jaCAS, joApp);
 
 			final JsonObject joResult = new JsonObject();
 			joResult.put("ticket", ticket);
@@ -112,14 +115,14 @@ public class PronoteServiceImpl implements PronoteService {
 		});
 	}
 
-	private String generateCasJson(String userId, String pronoteContext, JsonArray jaCAS, JsonObject joApp) {
+	private String generateCasJson(UserInfos user, String pronoteContext, JsonArray jaCAS, JsonObject joApp) {
 		//due to the checking implementation of the service, generating a ST by url (ST service == TARGET Proxy service)
 		final JsonObject joCAS = new JsonObject();
 		joCAS.put("id", UUID.randomUUID().toString());
-		joCAS.put("user", userId);
+		joCAS.put("user", user.getUserId());
 		joCAS.put("loggedIn", Boolean.TRUE);
 		joCAS.put("updatedAt", MongoDb.now());
-
+		joCAS.put("structureIds", user.getStructures());
 		//ST
 		final JsonObject joST = new JsonObject();
 		joST.put("ticketParameter", "ticket");
