@@ -43,6 +43,7 @@ public class VieScolaireFRController extends SSOController {
     private int responseTimeout;
     private static final String patternDateLVS = "dd/MM/yyyy";
     private SimpleDateFormat simpleDateFormat;
+    private String userAgent;
     private DateFormat patternDateNG = new SimpleDateFormat("yyyy-MM-dd");
     private static final String parameterRequestEtabURL = "url";
 
@@ -133,6 +134,7 @@ public class VieScolaireFRController extends SSOController {
                         });
                         httpClientRequest.headers().set("Content-Length", "0");
                         httpClientRequest.setTimeout(responseTimeout);
+                        httpClientRequest.putHeader("User-Agent", userAgent);
                         //Typically an unresolved Address, a timeout about connection or response
                             httpClientRequest.exceptionHandler(new Handler<Throwable>() {
                                 @Override
@@ -243,7 +245,7 @@ public class VieScolaireFRController extends SSOController {
                 || !ssoConfig.containsKey("connection-timeout")) {
             log.error("Invalid VieScolaireFR configuration");
         } else {
-
+            userAgent = ssoConfig.getString("user-agent", "Vert.x-WebClient");
             appli = ssoConfig.getString("appli");
             responseTimeout = ssoConfig.getInteger("connection-timeout");
             urlEndLVS = ssoConfig.getString(UtilsViesScolaireFr.URL_PROPERTY_END_LVS);
