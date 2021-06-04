@@ -72,23 +72,29 @@ public class VieScolaireFRController extends SSOController {
                     }
 
                     if (viescolairefrURI != null) {
-                        String urlToGetTicketStrBuilder = urlVieScolaireFREtablissement + urlEndLVS;
+                        final String urlToGetTicketStrBuilder = urlVieScolaireFREtablissement + urlEndLVS;
 
                         // Get the http client from the url that has been configured in "La Vie Scolaire" module
                         final HttpClient httpClient = generateHttpClient(viescolairefrURI);
                         log.debug("Get VSFR ticket : " + user.getUserId());
 
                         // Get the Ticket form the server "La Vie Scolaire"
-                        final HttpClientRequest httpClientRequest = httpClient.get(urlToGetTicketStrBuilder.toString()  , new Handler<HttpClientResponse>() {
+                        log.debug(urlToGetTicketStrBuilder);
+                        final HttpClientRequest httpClientRequest = httpClient.get(urlToGetTicketStrBuilder  , new Handler<HttpClientResponse>() {
                             @Override
                             public void handle(HttpClientResponse response) {
+                                response.pause();
+                                response.exceptionHandler(exh -> {
+                                    log.error("http client response exception ", exh);
+                                    renderError(request);
+                                });
+                                log.debug("in viesco http response " + response.statusCode());
                                 if (response.statusCode() == 200) {
-                                    final Buffer ticketVSFRBuffer = Buffer.buffer();
-                                        response.handler(new Handler<Buffer>() {
+                                        response.bodyHandler(new Handler<Buffer>() {
                                             @Override
-                                            public void handle(Buffer event) {
-                                        ticketVSFRBuffer.appendBuffer(event);
+                                            public void handle(Buffer ticketVSFRBuffer) {
                                         String ticketVSFR = ticketVSFRBuffer.toString();
+                                        log.debug("ticket : " + ticketVSFR);
                                         if(!ticketVSFR.isEmpty()){
                                             log.debug("Building VSFR URL : " + user.getUserId());
 
@@ -121,14 +127,20 @@ public class VieScolaireFRController extends SSOController {
                                             log.error("Empty VSFR ticket : " + user.getUserId());
                                             renderError(request);
                                         }
+                                        if (httpClient != null && !responseIsSent.getAndSet(true)) {
+                                            log.debug("close viesco httpclient");
+                                            httpClient.close();
+                                        }
                                             }
                                     });
+                                    response.resume();
                                 } else {
                                     log.error("Error when calling VSFR URL to get ticket : " + response.statusMessage());
                                     renderError(request);
-                                }
-                                if (!responseIsSent.getAndSet(true)) {
-                                    httpClient.close();
+                                    if (httpClient != null && !responseIsSent.getAndSet(true)) {
+                                        log.debug("close viesco httpclient");
+                                        httpClient.close();
+                                    }
                                 }
                             }
                         });
