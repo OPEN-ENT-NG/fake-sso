@@ -1,0 +1,29 @@
+{
+    "name": "{{ fakeSSOVersion }}",
+    "config": {
+        "main": "fr.wseduc.sso.FakeSSO",
+        "path-prefix": "sso",
+        "port": 8041,
+        {% if csrfToken %}"csrf-token": true,{% endif %}
+        "sql": true,
+        "mongodb": true,
+        "host": "https://{{ host }}",
+        "ssl": true,
+        "app-type" : "SYSTEM",
+        {% if overrideTheme %} "override-theme": {{ override2d }}, {% endif %}
+        "auto-redeploy": false,
+        "userbook-host": "https://{{ host }}",
+        "mode": "prod",
+        "publicConf": {
+            "xiti": {
+                "ID_SERVICE": {
+                    "default": 13
+                },
+                "LIBELLE_SERVICE": {
+                    "default": "PAGE_ENT"
+                }
+            }
+        },
+        "sso-controllers": {{ ssoControllers|default('[]') }}
+    }
+}
