@@ -1,14 +1,15 @@
-# Description
+# À propos de l'application fake-sso
 
-Fake SSO module is used to manage vendor specific authentication's protocol and mimic SSO workflow for the end user
-It is designed to isolate exotic implementations from standard ones.
+* Licence : [AGPL v3](http://www.gnu.org/licenses/agpl.txt) - Copyright Région Hauts-de-France (ex Picardie), Département Essonne, Région Nouvelle Aquitaine (ex Poitou-Charente)
+* Développeur(s) : Open Digital Education
+* Financeur(s) : Région Hauts-de-France (ex Picardie), Département Essonne, Région Nouvelle Aquitaine (ex Poitou-Charente)
 
-Fake SSO already provided implementation for :
+* Description : Fake SSO module is used to manage vendor specific authentication's protocol and mimic SSO workflow for the end user. It is designed to isolate exotic implementations from standard ones. Fake SSO already provided implementation for :
 
-* [Ecole Directe](https://www.ecoledirecte.com) (from Statim / Charlemagne) SSO integration
-* A simple cryptographic keyring system
-* Pronote' webservices to display a "student's life tracking widget"
-* [La Vie Scolaire.fr](http://www.axess-education.fr/la-vie-scolaire-fr/) RSA SSO integration
+	* [Ecole Directe](https://www.ecoledirecte.com) (from Statim / Charlemagne) SSO integration
+	* A simple cryptographic keyring system
+	* Pronote' webservices to display a "student's life tracking widget"
+	* [La Vie Scolaire.fr](http://www.axess-education.fr/la-vie-scolaire-fr/) RSA SSO integration
 
 # How to
 
