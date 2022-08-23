@@ -28,6 +28,10 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
+import org.postgresql.core.Utils;
+
+import java.sql.SQLException;
+
 import static org.entcore.common.sql.SqlResult.*;
 
 public class DefaultKeyRingService implements KeyRingService {
@@ -53,7 +57,13 @@ public class DefaultKeyRingService implements KeyRingService {
 					data.put("id", id);
 					data.put("service_id", table);
 					JsonObject formSchema = data.getJsonObject("form_schema");
-					String s = createServiceQuery(table, formSchema);
+					String s;
+					try {
+						s = createServiceQuery(table, formSchema);
+					} catch (SQLException sqle) {
+						handler.handle(new Either.Left<String, JsonObject>(sqle.getMessage()));
+						return;
+					}
 					SqlStatementsBuilder sb = new SqlStatementsBuilder();
 					sb.insert("sso.keyring", data, "id, service_id");
 					sb.raw(s);
@@ -65,9 +75,9 @@ public class DefaultKeyRingService implements KeyRingService {
 		}));
 	}
 
-	private String createServiceQuery(String tableName, JsonObject formSchema) {
+	private String createServiceQuery(String tableName, JsonObject formSchema) throws SQLException {
 		StringBuilder s = new StringBuilder()
-				.append("CREATE TABLE sso.").append(tableName).append(" ( ")
+				.append("CREATE TABLE sso.").append(Utils.escapeLiteral(null, tableName, true)).append(" ( ")
 				.append("id BIGSERIAL PRIMARY KEY, ")
 				.append("user_id VARCHAR(50) NOT NULL UNIQUE");
 		for (String attr: formSchema.fieldNames()) {
@@ -97,8 +107,13 @@ public class DefaultKeyRingService implements KeyRingService {
 						JsonObject rfs = data.getJsonObject("form_schema");
 						if (rfs != null && !rfs.equals(cfs)) {
 							SqlStatementsBuilder sb = new SqlStatementsBuilder();
-							sb.raw(dropServiceQuery(serviceId));
-							sb.raw(createServiceQuery(serviceId, rfs));
+							try {
+								sb.raw(dropServiceQuery(serviceId));
+								sb.raw(createServiceQuery(serviceId, rfs));
+							} catch (SQLException sqle) {
+								handler.handle(new Either.Left<String, JsonObject>(sqle.getMessage()));
+								return;
+							}
 							sb.prepared(query, values);
 							sql.transaction(sb.build(), validRowsResultHandler(2, handler));
 						}
@@ -112,15 +127,20 @@ public class DefaultKeyRingService implements KeyRingService {
 		}
 	}
 
-	private String dropServiceQuery(String serviceId) {
-		return "DROP TABLE sso." + serviceId;
+	private String dropServiceQuery(String serviceId) throws SQLException {
+		return "DROP TABLE sso." + Utils.escapeLiteral(null, serviceId, true);
 	}
 
 	@Override
 	public void drop(String serviceId, Handler<Either<String, JsonObject>> handler) {
 		SqlStatementsBuilder sb = new SqlStatementsBuilder();
 		sb.prepared("DELETE FROM sso.keyring WHERE service_id = ?", new JsonArray().add(serviceId));
-		sb.raw(dropServiceQuery(serviceId));
+		try {
+			sb.raw(dropServiceQuery(serviceId));
+		} catch (SQLException sqle) {
+			handler.handle(new Either.Left<String, JsonObject>(sqle.getMessage()));
+			return;
+		}
 		sql.transaction(sb.build(), validRowsResultHandler(handler));
 	}
 
