@@ -17,6 +17,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -130,81 +131,94 @@ public class Pronote extends SSOController {
 	private void callPronote(JsonObject jo, final Handler<JsonObject> handler) {
 		//two successive errors can be received (connection timeout + timeout period exceeded)
 		final AtomicBoolean responseIsSent = new AtomicBoolean(false);
+		final String service = jo.getString("address", "");
 		URI pronoteUri = null;
 		try {
-			final String service = jo.getString("address", "");
 			final String urlSeparator = service.endsWith("/")  ? "" : "/";
 			pronoteUri = new URI(service + urlSeparator + pronoteContext);
 		} catch (URISyntaxException e) {
-			log.debug("Invalid pronote web service uri", e);
+			log.error("Invalid pronote web service uri for : " + service, e);
 			handler.handle(new JsonObject().put("status", "error").put("message", "pronote.uri.error"));
 		}
 
+		///!\ an uri can not be null with a host null due to a char "_" in the FQDN
+		// uri.getHost() is therefore replaced by uri.toURL().getHost()
 		if (pronoteUri != null) {
-			final HttpClient httpClient = generateHttpClient(pronoteUri);
-			final String pronoteUrl = pronoteUri.toString()  + "?ticket=" + jo.getString("ticket") + "&methode=" + PROXY_METHOD;
+			String host = null;
+			try {
+				host = pronoteUri.toURL().getHost();
+			} catch (MalformedURLException e) {
+				log.error("Invalid pronote web service uri for : " + service, e);
+				handler.handle(new JsonObject().put("status", "error").put("message", "pronote.uri.error"));
+			}
 
-			final HttpClientRequest httpClientRequest = httpClient.post(pronoteUrl, new Handler<HttpClientResponse>() {
-				@Override
-				public void handle(HttpClientResponse response) {
-					if (response.statusCode() == 200) {
-						final Buffer buff = Buffer.buffer();
-						response.handler(new Handler<Buffer>() {
-							@Override
-							public void handle(Buffer event) {
-								buff.appendBuffer(event);
-							}
-						});
-						response.endHandler(new Handler<Void>() {
-							@Override
-							public void handle(Void end) {
-								final String xml = buff.toString();
-								handler.handle(new JsonObject().put("status", "ok").put("xml", xml));
-								if (!responseIsSent.getAndSet(true)) {
-									httpClient.close();
-								}
-							}
-						});
-					} else {
-						log.debug(response.statusMessage());
-						response.bodyHandler(new Handler<Buffer>() {
-							@Override
-							public void handle(Buffer event) {
-								log.debug("Returning body after PT CALL : " +  pronoteUrl + ", Returning body : " + event.toString("UTF-8"));
-								if (!responseIsSent.getAndSet(true)) {
-									httpClient.close();
-								}
-							}
-						});
-						handler.handle(new JsonObject().put("status", "error").put("message", "pronote.access.error"));
-					}
-				}
-			});
+			if (host != null) {
+				final int port = pronoteUri.getPort();
+				final String scheme= pronoteUri.getScheme();
 
-			httpClientRequest.headers().set("Content-Length", "0");
-			httpClientRequest.setTimeout(responseTimeout);
-			//Typically an unresolved Address, a timeout about connection or response
-			httpClientRequest.exceptionHandler(new Handler<Throwable>() {
-				@Override
-				public void handle(Throwable event) {
-					log.debug(event.getMessage(), event);
-					if (!responseIsSent.getAndSet(true)) {
-						handler.handle(new JsonObject().put("status", "error").put("message", "pronote.connection.error"));
-						httpClient.close();
+				final HttpClient httpClient = generateHttpClient(host, port, scheme);
+				final String pronoteUrl = pronoteUri.toString() + "?ticket=" + jo.getString("ticket") + "&methode=" + PROXY_METHOD;
+				final HttpClientRequest httpClientRequest = httpClient.post(pronoteUrl, new Handler<HttpClientResponse>() {
+					@Override
+					public void handle(HttpClientResponse response) {
+						if (response.statusCode() == 200) {
+							final Buffer buff = Buffer.buffer();
+							response.handler(new Handler<Buffer>() {
+								@Override
+								public void handle(Buffer event) {
+									buff.appendBuffer(event);
+								}
+							});
+							response.endHandler(new Handler<Void>() {
+								@Override
+								public void handle(Void end) {
+									final String xml = buff.toString();
+									handler.handle(new JsonObject().put("status", "ok").put("xml", xml));
+									if (!responseIsSent.getAndSet(true)) {
+										httpClient.close();
+									}
+								}
+							});
+						} else {
+							log.debug(response.statusMessage());
+							response.bodyHandler(new Handler<Buffer>() {
+								@Override
+								public void handle(Buffer event) {
+									log.debug("Returning body after PT CALL : " + pronoteUrl + ", Returning body : " + event.toString("UTF-8"));
+									if (!responseIsSent.getAndSet(true)) {
+										httpClient.close();
+									}
+								}
+							});
+							handler.handle(new JsonObject().put("status", "error").put("message", "pronote.access.error"));
+						}
 					}
-				}
-			}).end();
+				});
+
+				httpClientRequest.headers().set("Content-Length", "0");
+				httpClientRequest.setTimeout(responseTimeout);
+				//Typically an unresolved Address, a timeout about connection or response
+				httpClientRequest.exceptionHandler(new Handler<Throwable>() {
+					@Override
+					public void handle(Throwable event) {
+						log.debug(event.getMessage(), event);
+						if (!responseIsSent.getAndSet(true)) {
+							handler.handle(new JsonObject().put("status", "error").put("message", "pronote.connection.error"));
+							httpClient.close();
+						}
+					}
+				}).end();
+			}
 		}
-
 	}
 
-	private HttpClient generateHttpClient(URI uri) {
+	private HttpClient generateHttpClient(final String host, final int port, final String scheme) {
 		HttpClientOptions options = new HttpClientOptions()
-				.setDefaultHost(uri.getHost())
-				.setDefaultPort((uri.getPort() > 0) ? uri.getPort() : ("https".equals(uri.getScheme()) ? 443 : 80))
+				.setDefaultHost(host)
+				.setDefaultPort((port > 0) ? port : ("https".equals(scheme) ? 443 : 80))
 				.setVerifyHost(false)
 				.setTrustAll(true)
-				.setSsl("https".equals(uri.getScheme()))
+				.setSsl("https".equals(scheme))
 				.setKeepAlive(false);
 		return vertx.createHttpClient(options);
 	}
