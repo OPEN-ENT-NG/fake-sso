@@ -80,84 +80,81 @@ public class VieScolaireFRController extends SSOController {
 
                         // Get the Ticket form the server "La Vie Scolaire"
                         log.debug(urlToGetTicketStrBuilder);
-                        final HttpClientRequest httpClientRequest = httpClient.get(urlToGetTicketStrBuilder  , new Handler<HttpClientResponse>() {
-                            @Override
-                            public void handle(HttpClientResponse response) {
-                                response.pause();
-                                response.exceptionHandler(exh -> {
-                                    log.error("http client response exception ", exh);
-                                    renderError(request);
-                                });
-                                log.debug("in viesco http response " + response.statusCode());
-                                if (response.statusCode() == 200) {
-                                        response.bodyHandler(new Handler<Buffer>() {
-                                            @Override
-                                            public void handle(Buffer ticketVSFRBuffer) {
-                                        String ticketVSFR = ticketVSFRBuffer.toString();
-                                        log.debug("ticket : " + ticketVSFR);
-                                        if(!ticketVSFR.isEmpty()){
-                                            log.debug("Building VSFR URL : " + user.getUserId());
+                        final RequestOptions options = new RequestOptions()
+                            .setMethod(HttpMethod.GET)
+                            .setURI(urlToGetTicketStrBuilder)
+                            .addHeader("Content-Length", "0")
+                            .addHeader("User-Agent", userAgent)
+                            .setTimeout(responseTimeout);
+                        httpClient.request(options)
+                        .flatMap(r -> r.send())
+                        .onSuccess(response -> {
+                            response.pause();
+                            response.exceptionHandler(exh -> {
+                                log.error("http client response exception ", exh);
+                                renderError(request);
+                            });
+                            log.debug("in viesco http response " + response.statusCode());
+                            if (response.statusCode() == 200) {
+                                    response.bodyHandler(new Handler<Buffer>() {
+                                        @Override
+                                        public void handle(Buffer ticketVSFRBuffer) {
+                                    String ticketVSFR = ticketVSFRBuffer.toString();
+                                    log.debug("ticket : " + ticketVSFR);
+                                    if(!ticketVSFR.isEmpty()){
+                                        log.debug("Building VSFR URL : " + user.getUserId());
 
-                                            // Building unencrypted url
-                                            String userParametre = constructURLVieScolaireFR(ticketVSFR, user);
+                                        // Building unencrypted url
+                                        String userParametre = constructURLVieScolaireFR(ticketVSFR, user);
 
-                                            log.debug("VSFR URL builded :  userParametre -> " + userParametre);
+                                        log.debug("VSFR URL builded :  userParametre -> " + userParametre);
 
-                                            // Building crypted URL
-                                            try {
-                                                final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-                                                cipher.init(Cipher.ENCRYPT_MODE, viescolairefrPublicKey);
-                                                final String urlCrypte = URLEncoder.encode(Base64.getEncoder().encodeToString(
-                                                        cipher.doFinal(userParametre.getBytes("UTF-8"))), "UTF-8");
+                                        // Building crypted URL
+                                        try {
+                                            final Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+                                            cipher.init(Cipher.ENCRYPT_MODE, viescolairefrPublicKey);
+                                            final String urlCrypte = URLEncoder.encode(Base64.getEncoder().encodeToString(
+                                                    cipher.doFinal(userParametre.getBytes("UTF-8"))), "UTF-8");
 
-                                                String urIAppel = UtilsViesScolaireFr.URL_KEY_CRYPT + urlCrypte;
+                                            String urIAppel = UtilsViesScolaireFr.URL_KEY_CRYPT + urlCrypte;
 
-                                                log.debug("Crypted VSFR URL build : " + urIAppel);
+                                            log.debug("Crypted VSFR URL build : " + urIAppel);
 
-                                                if(request.params().contains("noRedirect") && Boolean.valueOf(request.params().get("noRedirect"))) {
-                                                    renderJson(request, new JsonObject().put("link", urlVieScolaireFREtablissement + urIAppel), 200);
-                                                } else {
-                                                    redirect(request, urlVieScolaireFREtablissement, urIAppel);
-                                                }
-                                            } catch (Exception e) {
-                                                log.error("Error encrypting rsa viescolairefr url",e);
-                                                renderError(request);
+                                            if(request.params().contains("noRedirect") && Boolean.valueOf(request.params().get("noRedirect"))) {
+                                                renderJson(request, new JsonObject().put("link", urlVieScolaireFREtablissement + urIAppel), 200);
+                                            } else {
+                                                redirect(request, urlVieScolaireFREtablissement, urIAppel);
                                             }
-                                        } else{
-                                            log.error("Empty VSFR ticket : " + user.getUserId());
+                                        } catch (Exception e) {
+                                            log.error("Error encrypting rsa viescolairefr url",e);
                                             renderError(request);
                                         }
-                                        if (httpClient != null && !responseIsSent.getAndSet(true)) {
-                                            log.debug("close viesco httpclient");
-                                            httpClient.close();
-                                        }
-                                            }
-                                    });
-                                    response.resume();
-                                } else {
-                                    log.error("Error when calling VSFR URL to get ticket : " + response.statusMessage());
-                                    renderError(request);
+                                    } else{
+                                        log.error("Empty VSFR ticket : " + user.getUserId());
+                                        renderError(request);
+                                    }
                                     if (httpClient != null && !responseIsSent.getAndSet(true)) {
                                         log.debug("close viesco httpclient");
                                         httpClient.close();
                                     }
+                                        }
+                                });
+                                response.resume();
+                            } else {
+                                log.error("Error when calling VSFR URL to get ticket : " + response.statusMessage());
+                                renderError(request);
+                                if (httpClient != null && !responseIsSent.getAndSet(true)) {
+                                    log.debug("close viesco httpclient");
+                                    httpClient.close();
                                 }
                             }
-                        });
-                        httpClientRequest.headers().set("Content-Length", "0");
-                        httpClientRequest.setTimeout(responseTimeout);
-                        httpClientRequest.putHeader("User-Agent", userAgent);
-                        //Typically an unresolved Address, a timeout about connection or response
-                            httpClientRequest.exceptionHandler(new Handler<Throwable>() {
-                                @Override
-                                public void handle(Throwable event) {
+                        }).onFailure(event -> {
                             log.error("Error when calling VSFR URL to get ticket for user : " + user.getUserId(), event);
                             if (!responseIsSent.getAndSet(true)) {
                                 httpClient.close();
                             }
                             renderError(request);
-                                }
-                        }).end();
+                        });
                     }
                 }else{
                     log.error("Error : URL in parameters is  empty or undefined for user : " + user.getUserId());

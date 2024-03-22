@@ -26,14 +26,16 @@ import fr.wseduc.sso.services.keyring.impl.DefaultCredentialsService;
 import fr.wseduc.sso.services.keyring.KeyRingService;
 import fr.wseduc.sso.services.keyring.impl.DefaultKeyRingService;
 import org.entcore.common.http.BaseServer;
+
+import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class FakeSSO extends BaseServer {
 
 	@Override
-	public void start() throws Exception {
-		super.start();
+	public void start(Promise<Void> startPromise) throws Exception {
+		super.start(startPromise);
 
 		KeyRingService keyRingService = new DefaultKeyRingService();
 		DefaultCredentialsService credentialsService = new DefaultCredentialsService(
@@ -50,6 +52,7 @@ public class FakeSSO extends BaseServer {
 		addController(credentialsController);
 
 		loadSSOControllers();
+		startPromise.tryComplete();
 	}
 
 	private void loadSSOControllers() {
