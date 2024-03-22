@@ -158,56 +158,52 @@ public class Pronote extends SSOController {
 
 				final HttpClient httpClient = generateHttpClient(host, port, scheme);
 				final String pronoteUrl = pronoteUri.toString() + "?ticket=" + jo.getString("ticket") + "&methode=" + PROXY_METHOD;
-				final HttpClientRequest httpClientRequest = httpClient.post(pronoteUrl, new Handler<HttpClientResponse>() {
-					@Override
-					public void handle(HttpClientResponse response) {
-						if (response.statusCode() == 200) {
-							final Buffer buff = Buffer.buffer();
-							response.handler(new Handler<Buffer>() {
-								@Override
-								public void handle(Buffer event) {
-									buff.appendBuffer(event);
+				final RequestOptions options = new RequestOptions()
+					.setMethod(HttpMethod.GET)
+					.setURI(pronoteUrl)
+					.addHeader("Content-Length",  "0")
+					.setTimeout(responseTimeout);
+				httpClient.request(options)
+				.flatMap(r -> r.send())
+				.onSuccess(response -> {
+					if (response.statusCode() == 200) {
+						final Buffer buff = Buffer.buffer();
+						response.handler(new Handler<Buffer>() {
+							@Override
+							public void handle(Buffer event) {
+								buff.appendBuffer(event);
+							}
+						});
+						response.endHandler(new Handler<Void>() {
+							@Override
+							public void handle(Void end) {
+								final String xml = buff.toString();
+								handler.handle(new JsonObject().put("status", "ok").put("xml", xml));
+								if (!responseIsSent.getAndSet(true)) {
+									httpClient.close();
 								}
-							});
-							response.endHandler(new Handler<Void>() {
-								@Override
-								public void handle(Void end) {
-									final String xml = buff.toString();
-									handler.handle(new JsonObject().put("status", "ok").put("xml", xml));
-									if (!responseIsSent.getAndSet(true)) {
-										httpClient.close();
-									}
+							}
+						});
+					} else {
+						log.debug(response.statusMessage());
+						response.bodyHandler(new Handler<Buffer>() {
+							@Override
+							public void handle(Buffer event) {
+								log.debug("Returning body after PT CALL : " + pronoteUrl + ", Returning body : " + event.toString("UTF-8"));
+								if (!responseIsSent.getAndSet(true)) {
+									httpClient.close();
 								}
-							});
-						} else {
-							log.debug(response.statusMessage());
-							response.bodyHandler(new Handler<Buffer>() {
-								@Override
-								public void handle(Buffer event) {
-									log.debug("Returning body after PT CALL : " + pronoteUrl + ", Returning body : " + event.toString("UTF-8"));
-									if (!responseIsSent.getAndSet(true)) {
-										httpClient.close();
-									}
-								}
-							});
-							handler.handle(new JsonObject().put("status", "error").put("message", "pronote.access.error"));
-						}
+							}
+						});
+						handler.handle(new JsonObject().put("status", "error").put("message", "pronote.access.error"));
+					}
+				}).onFailure(event -> {
+					log.debug(event.getMessage(), event);
+					if (!responseIsSent.getAndSet(true)) {
+						handler.handle(new JsonObject().put("status", "error").put("message", "pronote.connection.error"));
+						httpClient.close();
 					}
 				});
-
-				httpClientRequest.headers().set("Content-Length", "0");
-				httpClientRequest.setTimeout(responseTimeout);
-				//Typically an unresolved Address, a timeout about connection or response
-				httpClientRequest.exceptionHandler(new Handler<Throwable>() {
-					@Override
-					public void handle(Throwable event) {
-						log.debug(event.getMessage(), event);
-						if (!responseIsSent.getAndSet(true)) {
-							handler.handle(new JsonObject().put("status", "error").put("message", "pronote.connection.error"));
-							httpClient.close();
-						}
-					}
-				}).end();
 			}
 		}
 	}

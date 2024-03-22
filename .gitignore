@@ -21,3 +21,6 @@ test-tmp
 mods
 */mods
 data
+
+.env
+dependency-reduced-pom.xml
