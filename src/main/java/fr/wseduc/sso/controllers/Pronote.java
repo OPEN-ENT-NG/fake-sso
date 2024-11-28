@@ -159,7 +159,7 @@ public class Pronote extends SSOController {
 				final HttpClient httpClient = generateHttpClient(host, port, scheme);
 				final String pronoteUrl = pronoteUri.toString() + "?ticket=" + jo.getString("ticket") + "&methode=" + PROXY_METHOD;
 				final RequestOptions options = new RequestOptions()
-					.setMethod(HttpMethod.GET)
+					.setMethod(HttpMethod.POST)
 					.setURI(pronoteUrl)
 					.addHeader("Content-Length",  "0")
 					.setTimeout(responseTimeout);
