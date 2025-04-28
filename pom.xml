@@ -29,8 +29,8 @@
     </repositories>
 
     <properties><!-- Reporter les versions des dépendances de gradle.properties -->
-        <entcore.version>6.0-SNAPSHOT</entcore.version>
-        <web-utils.version>3.0-SNAPSHOT</web-utils.version>
+        <entcore.version>6.6-SNAPSHOT</entcore.version>
+        <web-utils.version>3.1-SNAPSHOT</web-utils.version>
         <postgres-driver.version>42.2.20</postgres-driver.version>
         <mongodb-helper.version>3.0-SNAPSHOT</mongodb-helper.version>
     </properties>
