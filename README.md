@@ -1,7 +1,7 @@
 # À propos de l'application fake-sso
 
 * Licence : [AGPL v3](http://www.gnu.org/licenses/agpl.txt) - Copyright Région Hauts-de-France (ex Picardie), Département Essonne, Région Nouvelle Aquitaine (ex Poitou-Charente)
-* Développeur(s) : Open Digital Education
+* Développeur(s) : Edifice
 * Financeur(s) : Région Hauts-de-France (ex Picardie), Département Essonne, Région Nouvelle Aquitaine (ex Poitou-Charente)
 
 * Description : Fake SSO module is used to manage vendor specific authentication's protocol and mimic SSO workflow for the end user. It is designed to isolate exotic implementations from standard ones. Fake SSO already provided implementation for :
