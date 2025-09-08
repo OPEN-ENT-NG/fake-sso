@@ -25,6 +25,7 @@ import fr.wseduc.sso.controllers.SSOController;
 import fr.wseduc.sso.services.keyring.impl.DefaultCredentialsService;
 import fr.wseduc.sso.services.keyring.KeyRingService;
 import fr.wseduc.sso.services.keyring.impl.DefaultKeyRingService;
+import io.vertx.core.Future;
 import org.entcore.common.http.BaseServer;
 
 import io.vertx.core.Promise;
@@ -35,24 +36,36 @@ public class FakeSSO extends BaseServer {
 
 	@Override
 	public void start(Promise<Void> startPromise) throws Exception {
-		super.start(startPromise);
+        final Promise<Void> promise = Promise.promise();
+        super.start(promise);
+        promise.future()
+            .compose(e -> init())
+            .onComplete(startPromise);
+    }
 
-		KeyRingService keyRingService = new DefaultKeyRingService();
-		DefaultCredentialsService credentialsService = new DefaultCredentialsService(
-				config.getString("crypt-key", "_"));
-		credentialsService.setKeyRingService(keyRingService);
+    private Future<Void> init() {
+        Future<Void> future;
+        try {
+            KeyRingService keyRingService = new DefaultKeyRingService();
+            DefaultCredentialsService credentialsService = new DefaultCredentialsService(
+                config.getString("crypt-key", "_"));
+            credentialsService.setKeyRingService(keyRingService);
 
-		KeyRingController keyRingController = new KeyRingController();
-		keyRingController.setKeyRingService(keyRingService);
-		CredentialsController credentialsController = new CredentialsController();
-		credentialsController.setKeyRingService(keyRingService);
-		credentialsController.setCredentialsService(credentialsService);
+            KeyRingController keyRingController = new KeyRingController();
+            keyRingController.setKeyRingService(keyRingService);
+            CredentialsController credentialsController = new CredentialsController();
+            credentialsController.setKeyRingService(keyRingService);
+            credentialsController.setCredentialsService(credentialsService);
 
-		addController(keyRingController);
-		addController(credentialsController);
+            addController(keyRingController);
+            addController(credentialsController);
 
-		loadSSOControllers();
-		startPromise.tryComplete();
+            loadSSOControllers();
+            future = Future.succeededFuture();
+        } catch (Exception e) {
+            future = Future.failedFuture(e);
+        }
+        return future;
 	}
 
 	private void loadSSOControllers() {
