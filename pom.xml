@@ -30,7 +30,7 @@
 
     <properties><!-- Reporter les versions des dépendances de gradle.properties -->
         <entcore.version>6.13.3</entcore.version>
-        <postgres-driver.version>42.2.20</postgres-driver.version>
+        <postgres-driver.version>42.3.9</postgres-driver.version>
         <mongodb-helper.version>3.1.1</mongodb-helper.version>
     </properties>
 
