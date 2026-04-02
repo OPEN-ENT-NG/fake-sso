@@ -2,6 +2,11 @@
   "name": "fr.wseduc~fake-sso",
   "config": {
     "main": "fr.wseduc.sso.FakeSSO",
+    "probes": [
+      "org.entcore.common.http.health.Neo4jProbe",
+      "org.entcore.common.http.health.MongoProbe",
+      "org.entcore.common.http.health.PostgresProbe"
+    ],
     "path-prefix": "sso",
     "port": 8041,
     "csrf-token": {{ csrfToken | default('true') }},
