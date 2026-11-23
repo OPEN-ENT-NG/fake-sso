@@ -22,7 +22,7 @@
   "keyring.login": "Identifiant",
   "keyring.name": "Nom",
   "keyring.password": "Mot de passe",
-  "keyring.save": "Sauvegarder",
+  "keyring.save": "Enregistrer",
   "keyring.search": "Rechercher",
   "keyring.service.access": "Accéder directement à l'application",
   "keyring.serviceId": "Identifiant du service",
